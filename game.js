@@ -144,7 +144,7 @@ const STAGES = [
 class TitleScene extends Scene {
   enter() {
     this.game.setAccent('home');
-    this.game.setHud('Title');
+    this.game.setHud('');
     show('title-screen');
     SFX.motif('home');
     const btn = document.getElementById('start-btn');
@@ -1400,7 +1400,7 @@ const STAGE5_TEXT = {
     { speaker: 'Merlin', text: "I found it. I did not pounce. The bird is fine. The human is happy. I am deeply, professionally exhausted." },
     { speaker: 'Merlin', text: 'This is real work. Slow, and careful, and it’s for someone else.' },
     { speaker: 'Merlin', text: 'Chinook’s going to be amazing at this.' },
-    { speaker: 'Merlin', text: 'It’s just… not me, is it.' },
+    { speaker: 'Merlin', text: "It’s just… not my job, is it." },
   ],
   flushBanner: 'The bird flies free! 🕊️',
   steady: 'Steady… hold it.',
@@ -1819,7 +1819,7 @@ class Stage6Scene extends Scene {
   _updateHud() {
     document.getElementById('s6-comp-fill').style.width = Math.max(0, Math.min(100, this.composure)) + '%';
     document.getElementById('s6-happy-fill').style.width = Math.min(100, Math.round(this.happiness / this.happinessGoal * 100)) + '%';
-    document.getElementById('s6-round').textContent = this.phase === 'round' ? ('Round ' + this.round) : 'Hades’ Domain';
+    document.getElementById('s6-round').textContent = this.phase === 'round' ? ('Round ' + this.round) : "Hades’ Domain";
     this.delegateBtn.textContent = '🤝 Delegate (' + this.delegatesLeft + ')';
     this.delegateBtn.disabled = this.delegatesLeft <= 0 || this.phase !== 'round';
   }
@@ -2071,7 +2071,7 @@ const STAGE7_TEXT = {
   homecoming: [
     { speaker: 'Merlin', text: 'Home. Finally. My paws are so tired.' },
     { speaker: 'Merlin', text: 'Ila is brave and disciplined and excellent.' },
-    { speaker: 'Merlin', text: 'Chinook has the best nose in the county. She is six months old.' },
+    { speaker: 'Merlin', text: 'Chinook has the best nose in the county. He is six months old.' },
     { speaker: 'Merlin', text: 'Hades runs an entire household with one eyebrow.' },
     { speaker: 'Merlin', text: "And me? I tried every job. I was not great at any of them." },
     { speaker: 'Merlin', text: "Maybe I just do not have a job. This thought is very loud." },
@@ -2085,7 +2085,7 @@ const STAGE7_TEXT = {
     { speaker: 'Merlin', text: "They do not need me to be Chinook." },
     { speaker: 'Merlin', text: 'They definitely do not need me to be Hades.' },
     { speaker: 'Merlin', text: 'They need me to be theirs.' },
-    { speaker: 'Merlin', text: 'To flop close enough that nobody has to ask if they are loved.' },
+    { speaker: 'Merlin', text: 'To find the toy, hold still, let the little one win, and flop close enough that nobody has to ask if they are loved.' },
     { speaker: 'Merlin', text: 'My job is making them happy. I had it the whole time.' },
   ],
   tableau: [

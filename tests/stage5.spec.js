@@ -134,6 +134,7 @@ test('Stage 5 content is family-safe (no shooting / no catching)', async ({ page
   expect(text).toContain('scent');
   expect(text).toContain('flush');
   expect(text).toContain('free');          // the bird flies free
+  expect(text).toContain('not my job');    // 0.9.1 thesis line
 });
 
 // ═══════════════════════════════════════════════════════════

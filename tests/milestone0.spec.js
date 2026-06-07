@@ -25,6 +25,7 @@ test('app boots with no console errors and shows the title', async ({ page }) =>
   await expect(page.locator('#title-screen')).toBeVisible();
   await expect(page.locator('.ts-title')).toContainText('Merlin');
   await expect(page.locator('.ts-title')).toContainText('Gets a Job');
+  await expect(page.locator('#hud-stage')).not.toContainText('title', { ignoreCase: true }); // 0.9.1 no stale HUD label
   expect(errors, errors.join('\n')).toEqual([]);
 });
 

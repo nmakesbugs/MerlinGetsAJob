@@ -105,11 +105,16 @@ test('Joy full triggers the realization with comedy suppressed', async ({ page }
 // ═══════════════════════════════════════════════════════════
 // 11. Realization names Merlin's real job.
 // ═══════════════════════════════════════════════════════════
-test('realization says Merlin’s job is making the boys happy / being theirs', async ({ page }) => {
+test("realization names Merlin's job: the boys, being happy, being theirs", async ({ page }) => {
   await enterStage7(page);
   const text = await page.evaluate(() => window.__merlinGame.debug.stage7AllText().toLowerCase());
   expect(text).toContain('my job is making them happy');
   expect(text).toContain('theirs');
+  // 0.9.1: Chinook pronoun + learned-action callbacks
+  expect(text).toContain('chinook has the best nose in the county. he is six months old.');
+  expect(text).toContain('find the toy');
+  expect(text).toContain('hold still');
+  expect(text).toContain('let the little one win');
 });
 
 // ═══════════════════════════════════════════════════════════

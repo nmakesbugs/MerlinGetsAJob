@@ -16,7 +16,17 @@ See the design docs for the full vision: [`DESIGN_BIBLE.md`](DESIGN_BIBLE.md),
 
 ## Status
 
-### 0.9 — Narrative & Emotional Pass ✅ (current)
+### 0.91 — QA micro-patch ✅ (current)
+
+Finalization of the 0.9 narrative pass:
+
+- **Stage 5 thesis tightened:** "It's just… not *my job*, is it." (ties the bird-dog realization directly to the game's title).
+- **Chinook pronoun corrected:** he/him throughout Stage 7 homecoming ("He is six months old.").
+- **Mentor-action callbacks in realization:** "To find the toy, hold still, let the little one win, and flop close enough that nobody has to ask if they are loved." — connects each learned skill to the finale without adding dialogue lines.
+- **Title-screen HUD artifact removed:** the stale "Title" label in the top-left HUD is now cleared on the title screen.
+- Cache bumped to `?v=0.91`. Full suite: **110 passed, 0 failed**.
+
+### 0.9 — Narrative & Emotional Pass ✅
 
 Surgical writing pass — mechanics unchanged from 0.82/0.82.1.
 
