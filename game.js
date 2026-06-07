@@ -448,6 +448,8 @@ function drawAcademyField(ctx) {
 
 /* ── STAGE 2 — Ila's Working Dog Academy (three IGP-inspired drills) ── */
 const OBEY_SEQUENCE = ['sit', 'heel', 'down', 'stay'];
+const OBEY_SEQUENCE_CHALLENGE = ['sit', 'heel', 'down', 'stay', 'down', 'heel'];   // longer in Challenge
+const OBEY_BUTTONS_CHALLENGE = ['down', 'stay', 'sit', 'heel'];                    // shuffled layout
 const OBEY_LABELS = { sit: 'Sit', heel: 'Heel', down: 'Down', stay: 'Stay' };
 
 class Stage2Scene extends Scene {
@@ -460,6 +462,10 @@ class Stage2Scene extends Scene {
     this.awaitingInput = false; // true only when a drill expects a tap
     this.obeyIndex = 0;
     this.outCalled = false;
+    this.obeySeq = this._assist() ? OBEY_SEQUENCE : OBEY_SEQUENCE_CHALLENGE;
+    this.trackWrong = 0;        // performance counters (for stars / medals)
+    this.obeyWrong = 0;
+    this.outPerfect = true;     // false once the player chooses "keep holding"
     this.canvas = document.getElementById('game-canvas');
     this.ctx = this.canvas.getContext('2d');
     this.layer = document.getElementById('stage2-layer');
@@ -469,6 +475,7 @@ class Stage2Scene extends Scene {
     this._intro();
   }
 
+  _assist() { return this.game.state.assistMode; }
   _say(lines, onDone) { this.game.dialogue.show(lines, onDone); }
   _setProgress(label, frac) {
     document.getElementById('s2-progress-label').textContent = label;
@@ -517,7 +524,7 @@ class Stage2Scene extends Scene {
     this.awaitingInput = true;
   }
   _trackTap(i, dot) {
-    if (i !== this.trackNext) { SFX.tap(); return; } // out of order: gentle feedback, no progress
+    if (i !== this.trackNext) { SFX.tap(); this.trackWrong++; return; } // out of order: gentle, but counted
     SFX.sniff();
     dot.classList.remove('next');
     dot.classList.add('done');
@@ -547,7 +554,8 @@ class Stage2Scene extends Scene {
   _revealObey() {
     const wrap = document.getElementById('s2-obey-buttons');
     wrap.innerHTML = '';
-    OBEY_SEQUENCE.forEach(cmd => {
+    const layout = this._assist() ? ['sit', 'heel', 'down', 'stay'] : OBEY_BUTTONS_CHALLENGE;
+    layout.forEach(cmd => {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 's2-cmd'; b.setAttribute('data-cmd', cmd);
       b.textContent = OBEY_LABELS[cmd];
@@ -559,16 +567,16 @@ class Stage2Scene extends Scene {
     this._obeyPrompt();
   }
   _obeyPrompt() {
-    const cmd = OBEY_SEQUENCE[this.obeyIndex];
+    const cmd = this.obeySeq[this.obeyIndex];
     document.getElementById('s2-obey-cue').textContent = 'Ila says: “' + OBEY_LABELS[cmd] + '!”';
   }
   _obeyTap(cmd) {
-    const expected = OBEY_SEQUENCE[this.obeyIndex];
-    if (cmd !== expected) { SFX.tap(); return; }   // Assist: wrong tap just re-prompts, no penalty
+    const expected = this.obeySeq[this.obeyIndex];
+    if (cmd !== expected) { SFX.tap(); this.obeyWrong++; return; }   // wrong tap re-prompts; counted
     SFX.cheer();
     this.obeyIndex++;
-    this._setProgress('Drill 2 — Obedience', this.obeyIndex / OBEY_SEQUENCE.length);
-    if (this.obeyIndex >= OBEY_SEQUENCE.length) { this._completeObedience(); return; }
+    this._setProgress('Drill 2 — Obedience', this.obeyIndex / this.obeySeq.length);
+    if (this.obeyIndex >= this.obeySeq.length) { this._completeObedience(); return; }
     this._obeyPrompt();
   }
   _completeObedience() {
@@ -607,7 +615,8 @@ class Stage2Scene extends Scene {
     this.awaitingInput = true;
   }
   _controlHold() {
-    // Over-eager comedy — a gentle redo, never a fail or a reward.
+    // Over-eager comedy — a gentle redo, never a fail or a reward. Costs the perfect-Out.
+    this.outPerfect = false;
     this.awaitingInput = false;
     this._showDrill(null);
     this._say([
@@ -628,7 +637,12 @@ class Stage2Scene extends Scene {
 
   _outro() {
     this.game.state.flags.stage2Complete = true;
-    this.game.state.stars['stage2-academy'] = 3;
+    // Stars: clean tracking + clean obedience + perfect Out = 3.
+    let stars = 1;
+    if (this.trackWrong === 0 && this.obeyWrong === 0 && this.outPerfect) stars = 3;
+    else if (this.trackWrong <= 2 && this.obeyWrong <= 2) stars = 2;
+    const medals = this.outPerfect ? [{ id: 'perfect-out', label: 'Perfect Out!' }] : [];
+    this.game.stageResult('stage2-academy', stars, medals);
     this._say([
       { speaker: 'Ila', text: 'Good. You have heart. Control comes with time.' },
       { speaker: 'Merlin', text: 'I have heart. I also have tired paws.' },
@@ -643,8 +657,9 @@ class Stage2Scene extends Scene {
       mentor: 'ila',
       drill: this.drill,
       awaitingInput: this.awaitingInput,
-      expected: this.drill === 'obedience' ? OBEY_SEQUENCE[this.obeyIndex] : null,
+      expected: this.drill === 'obedience' ? this.obeySeq[this.obeyIndex] : null,
       outCalled: this.outCalled,
+      trackWrong: this.trackWrong, obeyWrong: this.obeyWrong, outPerfect: this.outPerfect,
     };
   }
   autoPlayDrill() {
@@ -686,9 +701,9 @@ class Stage2Scene extends Scene {
    The resource is "Pep" (zero = a funny tumble + retry, never game over).
    ================================================================ */
 const STAGE3_OPPONENTS = [
-  { id: 1, name: 'Garbage Goblin', color: '#7fae4b', prop: '🍌', intro: 'Garbage Goblin is tipping the bins again!' },
-  { id: 2, name: 'Mischief Gremlin', color: '#9b6fc0', prop: '👟', intro: 'Mischief Gremlin swiped a shoe!' },
-  { id: 3, name: "The Mailman's Nemesis", color: '#8a8f98', prop: '🗑️', intro: "The Mailman's Nemesis tipped the trash everywhere!" },
+  { id: 1, name: 'Garbage Goblin', color: '#7fae4b', prop: '🍌', prefer: 'boof', intro: 'Garbage Goblin is tipping the bins again!' },
+  { id: 2, name: 'Mischief Gremlin', color: '#9b6fc0', prop: '👟', prefer: 'trip', intro: 'Mischief Gremlin swiped a shoe!' },
+  { id: 3, name: "The Mailman's Nemesis", color: '#8a8f98', prop: '🗑️', prefer: 'wiggle', intro: "The Mailman's Nemesis tipped the trash everywhere!" },
 ];
 const STAGE3_TEXT = {
   intro: [
@@ -758,6 +773,11 @@ class Stage3Scene extends Scene {
     this.attackTimer = 0;
     this._fleeToken = 0;
     this._fleeStart = 0;
+    this.assistsUsed = new Set();   // performance: variety, interrupts, pep-outs
+    this.interrupts = 0;
+    this.pepOuts = 0;
+    this.lastAssist = null;
+    this.repeatStreak = 0;
     this.canvas = document.getElementById('game-canvas');
     this.ctx = this.canvas.getContext('2d');
     this.layer = document.getElementById('stage3-layer');
@@ -815,8 +835,17 @@ class Stage3Scene extends Scene {
     if (!force && this.cool[id] > 0) return false;
     this.cool[id] = this._assist() ? 250 : 700;
     if (id === 'boof') SFX.boof(); else if (id === 'trip') SFX.bonk(); else SFX.tap();
+    this.assistsUsed.add(id);
     let gain = ASSIST_GAIN[id];
-    if (this.telegraph > 0) { this.telegraph = 0; this.telegraphEl.style.display = 'none'; gain += 12; SFX.star(); }
+    // Interrupting the opponent's wind-up is the best timing.
+    if (this.telegraph > 0) { this.telegraph = 0; this.telegraphEl.style.display = 'none'; gain += 12; this.interrupts++; SFX.star(); }
+    if (!this._assist()) {
+      // Challenge: the right tool earns more; spamming the same assist earns less.
+      if (this.opp && id === this.opp.prefer) gain += 8;
+      if (id === this.lastAssist) { this.repeatStreak++; gain = Math.max(8, gain - Math.min(this.repeatStreak * 6, 20)); }
+      else this.repeatStreak = 0;
+    }
+    this.lastAssist = id;
     this.teamwork = Math.min(100, this.teamwork + gain);
     this._updateMeters();
     if (this.teamwork >= 100) this._showFinisher(true);
@@ -861,6 +890,7 @@ class Stage3Scene extends Scene {
 
   _pepOut() {
     this.fighting = false;
+    this.pepOuts++;
     SFX.boof();
     this._banner(STAGE3_TEXT.pepOut);
     const idx = this.oppIndex;
@@ -869,7 +899,12 @@ class Stage3Scene extends Scene {
 
   _outro() {
     this.game.state.flags.stage3Complete = true;
-    this.game.state.stars['stage3-fight'] = 3;
+    const variety = this.assistsUsed.size;
+    let stars = 1;
+    if (this.pepOuts === 0 && variety >= 3) stars = 3;
+    else if (this.pepOuts <= 1 && variety >= 2) stars = 2;
+    const medals = variety >= 3 ? [{ id: 'teamwork-pro', label: 'Teamwork Pro' }] : [];
+    this.game.stageResult('stage3-fight', stars, medals);
     this.game.dialogue.show(STAGE3_TEXT.outro, () => this.game.goToStage('stage4-sniff'));
   }
 
@@ -924,6 +959,10 @@ class Stage3Scene extends Scene {
       finisherReady: this.teamwork >= 100 && this.fighting,
       fighting: this.fighting,
       fleeing: this.fleeing,
+      assistVariety: this.assistsUsed.size,
+      interrupts: this.interrupts,
+      pepOuts: this.pepOuts,
+      prefer: this.opp ? this.opp.prefer : null,
     };
   }
   autoPlay() {
@@ -1032,6 +1071,9 @@ class Stage4Scene extends Scene {
     this.target = null;
     this.decoy = null;
     this.lastResolve = null;
+    this.decoyTaps = 0;             // performance: discrimination + combo
+    this.hits = 0;
+    this.maxCombo = 0;
     this.canvas = document.getElementById('game-canvas');
     this.ctx = this.canvas.getContext('2d');
     this.layer = document.getElementById('stage4-layer');
@@ -1075,7 +1117,10 @@ class Stage4Scene extends Scene {
     const y = Math.round(16 + r() * 30);
     this.target = { kind, x, y, el: null };
     this._addEl(this.target, true);
-    if (this.wave >= 2 && r() < 0.5) {               // a playful decoy in later waves
+    // Challenge: decoys from the first wave and more often; Assist: gentler.
+    const decoyFrom = this._assist() ? 2 : 1;
+    const decoyChance = this._assist() ? 0.5 : 0.62;
+    if (this.wave >= decoyFrom && r() < decoyChance) {
       const dkind = ['butterfly', 'hat', 'hades'][Math.floor(r() * 3)];
       const dx = Math.round(12 + r() * 64), dy = Math.round(16 + r() * 30);
       this.decoy = { kind: dkind, x: dx, y: dy, el: null };
@@ -1086,7 +1131,7 @@ class Stage4Scene extends Scene {
   _addEl(t, primary) {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 's4-target' + (primary ? ' primary' : ' decoy');
+    b.className = 's4-target' + (primary ? ' primary' : ' decoy') + (this._assist() ? '' : ' small');
     b.setAttribute('data-kind', t.kind);
     b.setAttribute('data-role', primary ? 'primary' : 'decoy');
     b.style.left = t.x + '%';
@@ -1113,6 +1158,8 @@ class Stage4Scene extends Scene {
     SFX.poof(); SFX.cheer();
     this.score += bonus ? 20 : 10;
     this.combo += 1;
+    this.hits += 1;
+    if (this.combo > this.maxCombo) this.maxCombo = this.combo;
     this.lastResolve = { kind, outcome: kind === 'duck' ? 'fly-off' : 'puff' };
     this.target = null;
     if (!this.bigSniffTriggered) {
@@ -1129,6 +1176,7 @@ class Stage4Scene extends Scene {
 
   _resolveDecoy(t) {
     this.combo = 0;
+    this.decoyTaps += 1;
     this.score = Math.max(0, this.score - 5);
     this.lastResolve = { kind: t.kind, outcome: 'decoy' };
     if (t.kind === 'hades') SFX.purr(); else SFX.tap();
@@ -1159,7 +1207,11 @@ class Stage4Scene extends Scene {
 
   _outro() {
     this.game.state.flags.stage4Complete = true;
-    this.game.state.stars['stage4-sniff'] = 3;
+    let stars = 1;
+    if (this.decoyTaps === 0 && this.maxCombo >= 5) stars = 3;
+    else if (this.decoyTaps <= 2) stars = 2;
+    const medals = this.decoyTaps === 0 ? [{ id: 'nose-first', label: 'Nose First' }] : [];
+    this.game.stageResult('stage4-sniff', stars, medals);
     this.game.dialogue.show(STAGE4_TEXT.outro, () => this.game.goToStage('stage5-birddog'));
   }
 
@@ -1191,6 +1243,7 @@ class Stage4Scene extends Scene {
       target: this.target ? { kind: this.target.kind, x: this.target.x, y: this.target.y } : null,
       decoy: this.decoy ? { kind: this.decoy.kind } : null,
       lastResolve: this.lastResolve,
+      decoyTaps: this.decoyTaps, hits: this.hits, maxCombo: this.maxCombo,
     };
   }
   spawnNext() { if (this.telegraphing && !this.target) { this._spawnRound(); return true; } return false; }
@@ -1277,6 +1330,7 @@ class Stage5Scene extends Scene {
     this.cueReady = false;
     this.fatigue = 0;
     this.lastFlush = null;
+    this.holdResets = 0;            // performance: steadiness (early releases) + fatigue
     this.canvas = document.getElementById('game-canvas');
     this.ctx = this.canvas.getContext('2d');
     this.layer = document.getElementById('stage5-layer');
@@ -1330,7 +1384,7 @@ class Stage5Scene extends Scene {
   _advanceScent() {
     if (this.phase !== 'scent') return false;
     this.scentStep += 1;
-    this.fatigue = Math.min(100, this.fatigue + 2);
+    this.fatigue = Math.min(100, this.fatigue + (this._assist() ? 2 : 4));   // Challenge tires faster
     SFX.sniff();
     this._updateHud();
     if (this.scentStep >= this._scentTotal()) this._beginPoint();
@@ -1347,6 +1401,8 @@ class Stage5Scene extends Scene {
     if (this.phase === 'point' && this.holding && this.holdMeter < 100) {
       this.holding = false;
       this.holdMeter = 0;            // gentle reset — restraint is hard, but never a fail
+      this.holdResets += 1;
+      if (!this._assist()) this.fatigue = Math.min(100, this.fatigue + 4);
       this._updateHud();
     }
     this.holding = false;
@@ -1373,7 +1429,7 @@ class Stage5Scene extends Scene {
     if (this.phase !== 'cue' || !this.cueReady) return false;
     this.lastFlush = 'fly-free';
     this.game.state.flags['stage5Find' + (this.findIndex + 1) + 'Complete'] = true;
-    this.fatigue = Math.min(100, this.fatigue + 28);
+    this.fatigue = Math.min(100, this.fatigue + 12);
     SFX.poof(); SFX.cheer();
     this._setPhase('flushed');
     this._banner(STAGE5_TEXT.flushBanner, 1100);
@@ -1386,7 +1442,11 @@ class Stage5Scene extends Scene {
   _outro() {
     this._setPhase('outro');
     this.game.state.flags.stage5Complete = true;
-    this.game.state.stars['stage5-birddog'] = 3;
+    let stars = 1;
+    if (this.holdResets === 0 && this.fatigue < 90) stars = 3;
+    else if (this.holdResets <= 1) stars = 2;
+    const medals = this.holdResets === 0 ? [{ id: 'steady-boy', label: 'Steady Boy' }] : [];
+    this.game.stageResult('stage5-birddog', stars, medals);
     SFX.sigh();
     this.game.dialogue.show(STAGE5_TEXT.outro, () => this.game.goToStage('stage6-hades'));
   }
@@ -1427,10 +1487,12 @@ class Stage5Scene extends Scene {
       fatigue: this.fatigue,
       lastFlush: this.lastFlush,
       flushAvailable: this.phase === 'cue' && this.cueReady,
+      holdResets: this.holdResets,
     };
   }
   advanceScent() { return this._advanceScent(); }
   completePointHold() { if (this.phase === 'point') { this._pointComplete(); return true; } return false; }
+  forceHoldReset() { if (this.phase === 'point') { this.holding = true; this.holdMeter = 20; this._holdRelease(); return true; } return false; }
   flushOnCue() { return this._flush(); }
   autoPlayFind() {
     const start = this.findIndex; let guard = 0;
@@ -1572,6 +1634,11 @@ class Stage6Scene extends Scene {
     this.happiness = 0;
     this.happinessGoal = 120;
     this.delegatesLeft = this._assist() ? 3 : 2;
+    this.junkTaps = 0;             // performance: restraint
+    this.composureResets = 0;
+    this.delegatesUsed = 0;
+    this.junkTapsThisRound = 0;
+    this.cleanRounds = 0;
     this.canvas = document.getElementById('game-canvas');
     this.ctx = this.canvas.getContext('2d');
     this.layer = document.getElementById('stage6-layer');
@@ -1611,6 +1678,7 @@ class Stage6Scene extends Scene {
     this.phase = 'round';
     this.round = r;
     this.queue = STAGE6_ROUNDS[r - 1].slice();
+    this.junkTapsThisRound = 0;
     this._clearActive();
     this.spawnTimer = 0;
     this._updateHud();
@@ -1632,7 +1700,7 @@ class Stage6Scene extends Scene {
     const def = STAGE6_EVENTS[ev.type];
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 's6-event pri-' + ev.pri;
+    b.className = 's6-event pri-' + ev.pri + (this._assist() ? '' : ' challenge');  // Challenge: subtler cues
     b.setAttribute('data-type', ev.type);
     b.setAttribute('data-pri', ev.pri);
     b.style.left = S6_SLOTS[ev.slot][0] + '%';
@@ -1648,7 +1716,7 @@ class Stage6Scene extends Scene {
     if (this.active.indexOf(ev) < 0) return false;
     if (ev.pri === 'high') { this.happiness += 20; SFX.cheer(); }
     else if (ev.pri === 'med') { this.happiness += 10; SFX.tap(); }
-    else if (ev.pri === 'low') { this.composure -= 18; SFX.boof(); }     // reacted to junk — the dog mistake
+    else if (ev.pri === 'low') { this.composure -= (this._assist() ? 18 : 24); this.junkTaps++; this.junkTapsThisRound++; SFX.boof(); }  // reacted to junk
     else if (ev.pri === 'rest') { this.composure = Math.min(100, this.composure + 22); SFX.purr(); }  // strategic rest
     this.composure = Math.max(0, Math.min(100, this.composure));
     this._removeEl(ev);
@@ -1672,6 +1740,7 @@ class Stage6Scene extends Scene {
     const target = ev || this.active.find(e => e.pri === 'high' || e.pri === 'med');
     if (!target) return false;
     this.delegatesLeft -= 1;
+    this.delegatesUsed += 1;
     this.game.state.flags.stage6DelegatedTask = true;
     this.happiness += (target.pri === 'high' ? 20 : 10);
     SFX.slowBlink();
@@ -1683,6 +1752,7 @@ class Stage6Scene extends Scene {
 
   _spiral() {
     this.game.state.flags.stage6ComposureResetSeen = true;
+    this.composureResets++;
     SFX.boof(); SFX.sigh();
     this._clearActive();
     this.composure = 60;                  // partial reset — never a game-over
@@ -1696,6 +1766,7 @@ class Stage6Scene extends Scene {
   }
   _completeRound() {
     this.game.state.flags['stage6Round' + this.round + 'Complete'] = true;
+    if (this.junkTapsThisRound === 0) this.cleanRounds++;
     if (this.round < STAGE6_ROUNDS.length) this._startRound(this.round + 1);
     else this._verdict();
   }
@@ -1703,7 +1774,11 @@ class Stage6Scene extends Scene {
   _verdict() {
     this.phase = 'verdict';
     this.game.state.flags.stage6Complete = true;
-    this.game.state.stars['stage6-hades'] = 3;
+    let stars = 1;
+    if (this.junkTaps === 0 && this.composureResets === 0) stars = 3;
+    else if (this.composureResets === 0) stars = 2;
+    const medals = this.cleanRounds >= 1 ? [{ id: 'catlike-composure', label: 'Catlike Composure' }] : [];
+    this.game.stageResult('stage6-hades', stars, medals);
     this._updateHud();
     SFX.slowBlink();
     this.game.dialogue.show(STAGE6_TEXT.verdict, () => this.game.goToStage('stage7-realjob'));
@@ -1746,6 +1821,8 @@ class Stage6Scene extends Scene {
       activeTypes: this.active.map(e => e.type),
       queueLen: this.queue.length,
       demoComplete: !!this.game.state.flags.stage6DemoComplete,
+      junkTaps: this.junkTaps, junkTapsThisRound: this.junkTapsThisRound,
+      composureResets: this.composureResets, delegatesUsed: this.delegatesUsed, cleanRounds: this.cleanRounds,
     };
   }
   spawnEvent(type) { if (!STAGE6_EVENTS[type] || this.phase !== 'round') return false; return this._spawnType(type).type; }
@@ -1967,7 +2044,8 @@ class Stage7Scene extends Scene {
     this.phase = 'end';
     this.game.state.flags.stage7Complete = true;
     this.game.state.joy = this.joy;
-    this.game.state.stars['stage7-realjob'] = 3;
+    // Gentle finale: always full stars + a warm completion medal. No penalties.
+    this.game.stageResult('stage7-realjob', 3, [{ id: 'real-job', label: 'Merlin’s Real Job' }]);
     this.endEl.style.display = 'flex';
     SFX.cheer();
     const replay = document.getElementById('s7-replay');
@@ -2062,6 +2140,7 @@ const game = {
     aesthetic: 'home',
     choices: {},
     stars: {},
+    medals: {},
     joy: 0,
     rngSeed: 0,
     flags: {},
@@ -2093,6 +2172,25 @@ const game = {
 
   setAccent(a) { this.state.aesthetic = a; document.body.setAttribute('data-accent', a); },
   setHud(label) { const el = document.getElementById('hud-stage'); if (el) el.textContent = label; },
+
+  // ── Shared scoring: stars (1–3) + optional Merlin Medals + a light toast. ──
+  // Stars never block progression; medals are optional standout-play rewards.
+  stageResult(stageId, stars, medals) {
+    const n = Math.max(1, Math.min(3, stars | 0));
+    this.state.stars[stageId] = n;
+    const earned = [];
+    (medals || []).forEach(m => { if (m && m.id && !this.state.medals[m.id]) { this.state.medals[m.id] = true; earned.push(m.label || m.id); } });
+    let msg = '★'.repeat(n) + '☆'.repeat(3 - n);
+    if (earned.length) msg += '  ·  🏅 ' + earned.join(', ');
+    this.toast(msg);
+  },
+  toast(text, ms) {
+    const el = document.getElementById('result-toast');
+    if (!el) return;
+    el.textContent = text; el.style.display = 'block';
+    if (this._toastTimer) clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => { el.style.display = 'none'; }, ms || 1800);
+  },
 
   setAssist(on) {
     this.state.assistMode = !!on;
@@ -2175,6 +2273,7 @@ const game = {
     stage5GetState() { return game.scene && game.scene.getState ? game.scene.getState() : null; },
     stage5AdvanceScent() { return game.scene && game.scene.advanceScent ? game.scene.advanceScent() : false; },
     stage5CompletePointHold() { return game.scene && game.scene.completePointHold ? game.scene.completePointHold() : false; },
+    stage5ForceHoldReset() { return game.scene && game.scene.forceHoldReset ? game.scene.forceHoldReset() : false; },
     stage5FlushOnCue() { return game.scene && game.scene.flushOnCue ? game.scene.flushOnCue() : false; },
     stage5AutoPlayFind() { return game.scene && game.scene.autoPlayFind ? game.scene.autoPlayFind() : null; },
     stage5AutoPlayStage() { return game.scene && game.scene.autoPlayStage ? game.scene.autoPlayStage() : null; },

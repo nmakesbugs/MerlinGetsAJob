@@ -58,6 +58,14 @@ body[data-accent="hades"]   { --accent: #8a5fc0; --accent-deep: #4a2f80; }
 }
 #assist-toggle[aria-pressed="false"] { background: #7a8aa0; box-shadow: 0 2px 0 #4a5566; }
 
+/* Shared result toast (end-of-stage stars + Merlin Medals) */
+#result-toast {
+  position: absolute; top: 116px; left: 50%; transform: translateX(-50%); z-index: 8;
+  font-family: 'Fredoka One','Nunito',cursive; font-size: 18px; color: var(--accent-deep);
+  background: var(--paper); border: 3px solid var(--accent-deep); border-radius: 999px;
+  padding: 8px 18px; white-space: nowrap; box-shadow: 0 6px 18px rgba(0,0,0,.28);
+}
+
 /* ── Shared screen layout for centered panels ── */
 #title-screen, #stage-view, #end-screen {
   position: absolute; inset: 0;
@@ -384,6 +392,7 @@ body[data-accent="hades"]   { --accent: #8a5fc0; --accent-deep: #4a2f80; }
   50%     { box-shadow: 0 0 20px 8px rgba(196,98,45,.7); }
 }
 .s4-target.decoy { background: rgba(255,255,255,.35); }
+.s4-target.small { width: 46px; height: 46px; font-size: 28px; line-height: 42px; }  /* Challenge: smaller targets */
 .s4-target.flyoff { transition: transform .35s ease, opacity .35s ease; transform: translate(-50%, -180%) rotate(12deg); opacity: 0; }
 .s4-target.puff { transition: transform .3s ease, opacity .3s ease; transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
 .s4-target.gone { transition: opacity .25s ease; opacity: 0; }
@@ -472,6 +481,9 @@ body[data-accent="hades"]   { --accent: #8a5fc0; --accent-deep: #4a2f80; }
 .s6-event.pri-med { border-color: #c79b53; }
 .s6-event.pri-low { opacity: .55; border-style: dashed; }     /* junk reads as dim/subtle */
 .s6-event.pri-rest { border-color: #e6b450; background: #fff6da; box-shadow: 0 0 14px 4px rgba(255,210,90,.6); }
+/* Challenge: high-priority no longer glows (subtler cue); junk looks more tempting */
+.s6-event.pri-high.challenge { animation: none; }
+.s6-event.pri-low.challenge { opacity: .92; border-style: solid; }
 
 #s6-controls { position: absolute; left: 16px; right: 16px; bottom: 20px; display: flex; justify-content: center; }
 .s6-btn {

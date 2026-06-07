@@ -145,3 +145,32 @@ test('Hades verdict names Merlin’s gift and stays kind', async ({ page }) => {
     expect(text, `should not contain "${bad}"`).not.toContain(bad);
   }
 });
+
+// ═══════════════════════════════════════════════════════════
+// 0.8 Gameplay pass — stars, medals, Challenge difference.
+// ═══════════════════════════════════════════════════════════
+const starOf6 = (page, id) => page.evaluate((s) => window.__merlinGame.state.stars[s], id);
+const medalsOf6 = (page) => page.evaluate(() => window.__merlinGame.state.medals);
+
+test('clean management earns 3 stars and the Catlike Composure medal', async ({ page }) => {
+  await enterStage6(page);
+  await page.evaluate(() => window.__merlinGame.debug.stage6AutoPlayStage());
+  expect(await starOf6(page, 'stage6-hades')).toBe(3);
+  expect((await medalsOf6(page))['catlike-composure']).toBe(true);
+});
+
+test('tapping junk lowers the star score', async ({ page }) => {
+  await enterRound1(page);
+  await page.evaluate(() => { window.__merlinGame.debug.stage6HandleEvent('leaf'); window.__merlinGame.debug.stage6HandleEvent('leaf'); });
+  await page.evaluate(() => window.__merlinGame.debug.stage6AutoPlayStage());
+  expect(await starOf6(page, 'stage6-hades')).toBeLessThan(3);
+});
+
+test('Challenge mode renders subtler event cues', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => { window.__merlinGame.setAssist(false); window.__merlinGame.goToStage('stage6-hades'); });
+  await page.waitForFunction(() => window.__merlinGame.state.currentStage === 'stage6-hades');
+  await drain(page);   // → round 1
+  await page.evaluate(() => window.__merlinGame.debug.stage6SpawnEvent('boys-need'));
+  expect(await page.locator('.s6-event.challenge').count()).toBeGreaterThan(0);
+});

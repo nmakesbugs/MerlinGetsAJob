@@ -141,3 +141,13 @@ test('finale is warm, not a failure, and keeps the home geography', async ({ pag
   expect(text).toContain('boys');
   expect(text).toContain('happy');
 });
+
+// ═══════════════════════════════════════════════════════════
+// 0.8 Gameplay pass — Stage 7 stays gentle (3 stars + warm medal, no penalty).
+// ═══════════════════════════════════════════════════════════
+test('finale stays gentle: 3 stars and a completion medal', async ({ page }) => {
+  await enterStage7(page);
+  await page.evaluate(() => window.__merlinGame.debug.stage7AutoPlayFinale());
+  expect(await page.evaluate(() => window.__merlinGame.state.stars['stage7-realjob'])).toBe(3);
+  expect((await page.evaluate(() => window.__merlinGame.state.medals))['real-job']).toBe(true);
+});

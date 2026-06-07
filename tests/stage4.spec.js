@@ -187,3 +187,37 @@ test('Stage 4 content is family-safe (no shooting / no harm)', async ({ page }) 
   expect(text).toContain('fly off');   // ducks fly off unharmed
   expect(text).toContain('poof');
 });
+
+// ═══════════════════════════════════════════════════════════
+// 0.8 Gameplay pass — stars, medals, Challenge difference.
+// ═══════════════════════════════════════════════════════════
+const starOf4 = (page, id) => page.evaluate((s) => window.__merlinGame.state.stars[s], id);
+const medalsOf4 = (page) => page.evaluate(() => window.__merlinGame.state.medals);
+
+test('a clean gallery earns 3 stars and the Nose First medal', async ({ page }) => {
+  await enterStage4(page, 7);
+  await page.evaluate(() => window.__merlinGame.debug.stage4AutoPlayGallery());
+  expect(await starOf4(page, 'stage4-sniff')).toBe(3);
+  expect((await medalsOf4(page))['nose-first']).toBe(true);
+});
+
+test('tapping decoys lowers stars and skips Nose First', async ({ page }) => {
+  await enterAndStart(page, 7);
+  for (let i = 0; i < 3; i++) {
+    await ensureTarget(page);
+    await page.evaluate(() => window.__merlinGame.debug.stage4ForceDecoy('butterfly'));
+    await page.evaluate(() => window.__merlinGame.debug.stage4TapDecoy());
+  }
+  await page.evaluate(() => window.__merlinGame.debug.stage4AutoPlayGallery());
+  expect(await starOf4(page, 'stage4-sniff')).toBeLessThan(3);
+  expect(Boolean((await medalsOf4(page))['nose-first'])).toBe(false);
+});
+
+test('Challenge mode uses smaller targets', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => { window.__merlinGame.state.rngSeed = 7; window.__merlinGame.setAssist(false); window.__merlinGame.goToStage('stage4-sniff'); });
+  await page.waitForFunction(() => window.__merlinGame.state.currentStage === 'stage4-sniff');
+  await drain(page);
+  await page.evaluate(() => window.__merlinGame.debug.stage4SpawnNextTarget());
+  expect(await page.locator('.s4-target.primary.small').count()).toBeGreaterThan(0);
+});

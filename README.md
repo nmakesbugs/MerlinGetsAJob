@@ -16,7 +16,24 @@ See the design docs for the full vision: [`DESIGN_BIBLE.md`](DESIGN_BIBLE.md),
 
 ## Status
 
-### Milestone 7 — Stage 7: "Merlin's Real Job" ✅ (current) — all seven stages playable
+### 0.8 — Gameplay & Mechanics Pass ✅ (current)
+
+Made the game feel like a real game without losing the warmth. **Assist Mode stays easy and
+guaranteed-finishable**; **Challenge Mode** is now meaningfully more thoughtful.
+
+- **Real star scoring (Stages 2–6):** 1–3 stars based on actual performance (clean tracking /
+  varied assists / decoy avoidance / steady holds / restraint), no longer always 3. Stars never
+  block progress. Stage 1 and Stage 7 stay at a gentle 3.
+- **Merlin Medals** (optional standout play, shown as a small end-of-stage toast):
+  `perfect-out` (S2), `teamwork-pro` (S3), `nose-first` (S4), `steady-boy` (S5),
+  `catlike-composure` (S6), plus a warm `real-job` completion medal (S7). Stored in
+  `state.medals`.
+- **Challenge tuning:** longer/shuffled obedience (S2), preferred-assist + repeat-penalty (S3),
+  smaller targets + earlier/more decoys (S4), faster fatigue + steadier-hold demands (S5),
+  subtler cues + tougher composure (S6). The lesson is restraint and judgment, never twitch
+  difficulty — and there is still no story-blocking failure anywhere.
+
+### Milestone 7 — Stage 7: "Merlin's Real Job" ✅ — all seven stages playable
 
 The emotional finale. Merlin comes home tired and unsure whether he ever found a "real job" —
 then the boys greet him and he realizes his job was here all along.

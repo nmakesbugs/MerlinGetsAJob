@@ -136,3 +136,34 @@ test('Stage 5 content is family-safe (no shooting / no catching)', async ({ page
   expect(text).toContain('flush');
   expect(text).toContain('free');          // the bird flies free
 });
+
+// ═══════════════════════════════════════════════════════════
+// 0.8 Gameplay pass — stars, medals, Challenge difference.
+// ═══════════════════════════════════════════════════════════
+const starOf5 = (page, id) => page.evaluate((s) => window.__merlinGame.state.stars[s], id);
+const medalsOf5 = (page) => page.evaluate(() => window.__merlinGame.state.medals);
+
+test('clean holds earn 3 stars and the Steady Boy medal', async ({ page }) => {
+  await enterStage5(page);
+  await page.evaluate(() => window.__merlinGame.debug.stage5AutoPlayStage());
+  expect(await starOf5(page, 'stage5-birddog')).toBe(3);
+  expect((await medalsOf5(page))['steady-boy']).toBe(true);
+});
+
+test('a hold reset lowers stars and skips Steady Boy', async ({ page }) => {
+  await enterAndScent(page);
+  await toPoint(page);
+  await page.evaluate(() => window.__merlinGame.debug.stage5ForceHoldReset());
+  await page.evaluate(() => window.__merlinGame.debug.stage5AutoPlayStage());
+  expect(await starOf5(page, 'stage5-birddog')).toBeLessThan(3);
+  expect(Boolean((await medalsOf5(page))['steady-boy'])).toBe(false);
+});
+
+test('Challenge mode tires Merlin faster', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => { window.__merlinGame.setAssist(false); window.__merlinGame.goToStage('stage5-birddog'); });
+  await page.waitForFunction(() => window.__merlinGame.state.currentStage === 'stage5-birddog');
+  await drain(page);
+  await page.evaluate(() => window.__merlinGame.debug.stage5AdvanceScent());
+  expect((await s5(page)).fatigue).toBe(4);   // Challenge +4/step (Assist is +2)
+});

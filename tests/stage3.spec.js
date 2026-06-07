@@ -154,3 +154,39 @@ test('Stage 3 content is family-safe cartoon slapstick', async ({ page }) => {
   expect(text).toContain('pep');        // resource is Pep
   expect(text).toContain('scamper');    // defeat = flee, not injury
 });
+
+// ═══════════════════════════════════════════════════════════
+// 0.8 Gameplay pass — stars, medals, Challenge difference.
+// ═══════════════════════════════════════════════════════════
+const starOf3 = (page, id) => page.evaluate((s) => window.__merlinGame.state.stars[s], id);
+const medalsOf3 = (page) => page.evaluate(() => window.__merlinGame.state.medals);
+
+test('using all three assists earns 3 stars and the Teamwork Pro medal', async ({ page }) => {
+  await enterAndFight(page);
+  for (let o = 0; o < 3; o++) {
+    await drain(page);
+    for (const a of ['boof', 'trip', 'wiggle']) await page.evaluate((x) => window.__merlinGame.debug.stage3UseAssist(x), a);
+    await page.evaluate(() => { window.__merlinGame.debug.stage3FillTeamwork(); window.__merlinGame.debug.stage3Finish(); window.__merlinGame.debug.stage3AfterFlee(); });
+  }
+  for (let i = 0; i < 8; i++) { if ((await stage(page)) !== 'stage3-fight') break; await page.evaluate(() => window.__merlinGame.debug.advanceDialogue()); }
+  expect(await starOf3(page, 'stage3-fight')).toBe(3);
+  expect((await medalsOf3(page))['teamwork-pro']).toBe(true);
+});
+
+test('mash-the-finisher auto-play earns fewer stars and no medal', async ({ page }) => {
+  await enterStage3(page);
+  await page.evaluate(() => window.__merlinGame.debug.stage3AutoPlayFight());
+  expect(await starOf3(page, 'stage3-fight')).toBeLessThan(3);
+  expect(Boolean((await medalsOf3(page))['teamwork-pro'])).toBe(false);
+});
+
+test('Challenge penalizes repeating the same assist', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => { window.__merlinGame.setAssist(false); window.__merlinGame.goToStage('stage3-fight'); });
+  await page.waitForFunction(() => window.__merlinGame.state.currentStage === 'stage3-fight');
+  await drain(page);   // advance the intro so opponent 1 is fighting
+  await page.waitForFunction(() => { const s = window.__merlinGame.scene; return s && s.fighting; });
+  const gain1 = await page.evaluate(() => { const s = window.__merlinGame.scene; s.teamwork = 0; window.__merlinGame.debug.stage3UseAssist('boof'); return s.teamwork; });
+  const gain2 = await page.evaluate(() => { const s = window.__merlinGame.scene; const b = s.teamwork; window.__merlinGame.debug.stage3UseAssist('boof'); return s.teamwork - b; });
+  expect(gain2).toBeLessThan(gain1);   // repeating the same assist earns less
+});

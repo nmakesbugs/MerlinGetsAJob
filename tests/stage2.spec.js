@@ -149,3 +149,45 @@ test('Stage 2 content is family-safe and control-focused', async ({ page }) => {
   expect(text).toContain('out');       // "Out!" release cue
   expect(text).toContain('control');
 });
+
+// ═══════════════════════════════════════════════════════════
+// 0.8 Gameplay pass — stars, medals, Challenge difference.
+// ═══════════════════════════════════════════════════════════
+const starOf = (page, id) => page.evaluate((s) => window.__merlinGame.state.stars[s], id);
+const medalsOf = (page) => page.evaluate(() => window.__merlinGame.state.medals);
+
+test('clean Assist play earns 3 stars and the Perfect Out medal', async ({ page }) => {
+  await enterStage2(page);
+  for (let i = 0; i < 50; i++) {
+    if ((await stage(page)) !== 'stage2-academy') break;
+    const adv = await page.evaluate(() => window.__merlinGame.debug.advanceDialogue());
+    if (!adv) await page.evaluate(() => window.__merlinGame.debug.stage2AutoPlayDrill());
+  }
+  expect(await starOf(page, 'stage2-academy')).toBe(3);
+  expect((await medalsOf(page))['perfect-out']).toBe(true);
+});
+
+test('over-eager holding lowers the star score and skips the medal', async ({ page }) => {
+  await enterStage2(page);
+  await drain(page);
+  await page.evaluate(() => window.__merlinGame.debug.stage2AutoPlayDrill());  // tracking
+  await drain(page);
+  await page.evaluate(() => window.__merlinGame.debug.stage2AutoPlayDrill());  // obedience
+  await drain(page);                                                          // → control prompt
+  await page.locator('.s2-ctrl-btn.hold').click();                            // costs Perfect Out
+  await drain(page);
+  await page.locator('.s2-ctrl-btn.release').click();
+  await drain(page);                                                          // → outro computes result
+  expect(await starOf(page, 'stage2-academy')).toBe(2);
+  expect(Boolean((await medalsOf(page))['perfect-out'])).toBe(false);
+});
+
+test('Challenge mode uses a longer obedience sequence', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => { window.__merlinGame.setAssist(false); window.__merlinGame.goToStage('stage2-academy'); });
+  await page.waitForFunction(() => window.__merlinGame.state.currentStage === 'stage2-academy');
+  await drain(page);
+  await page.evaluate(() => window.__merlinGame.debug.stage2AutoPlayDrill());  // tracking
+  await drain(page);                                                          // → obedience
+  expect(await page.evaluate(() => window.__merlinGame.scene.obeySeq.length)).toBe(6);
+});
