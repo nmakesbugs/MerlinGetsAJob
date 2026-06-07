@@ -391,6 +391,292 @@ class Stage1Scene extends Scene {
   }
 }
 
+/* ================================================================
+   ILA — code-drawn working-line German Shepherd (black-and-tan).
+   Mostly-black saddle, tan points (legs, chest, cheeks, brows),
+   upright ears, steady square stance, calm alert face. Drawn head-right
+   in local coords; the scene mirrors her to face Merlin. Disciplined and
+   kind — never snarling or aggressive.
+   ================================================================ */
+function drawIla(ctx) {
+  const g = pen(ctx);
+  const BLK = '#1c1c1c', BLK2 = '#141414', TAN = '#c8a86b', TAN2 = '#a8884b', NOSE = '#0e0e0e';
+  g.fill('#000000', 0.15); g.ellipse(72, 110, 100, 14);                 // shadow
+  // Relaxed tail (hangs low — calm, not raised)
+  g.fill(BLK2, 1); [[20, 72, 9], [13, 82, 8], [9, 94, 6], [7, 104, 4]].forEach(([x, y, r]) => g.circle(x, y, r));
+  // Legs: black uppers, tan lower points
+  g.fill(BLK, 1);[34, 52, 86, 104].forEach(x => g.rrect(x, 80, 13, 20, 4));
+  g.fill(TAN, 1);[34, 52, 86, 104].forEach(x => g.rrect(x, 98, 13, 13, 4));
+  // Body + tan chest + black saddle
+  g.fill(BLK, 1); g.ellipse(72, 70, 102, 54);
+  g.fill(TAN, 1); g.ellipse(108, 82, 40, 30);
+  g.fill(BLK, 1); g.ellipse(70, 62, 98, 44);
+  // Head: black skull, tan cheeks, tan muzzle with black bridge, nose
+  g.fill(BLK, 1); g.ellipse(110, 52, 30, 34);
+  g.fill(TAN, 1); g.ellipse(120, 60, 26, 24);
+  g.fill(TAN, 1); g.ellipse(132, 58, 30, 18);
+  g.fill(BLK, 1); g.ellipse(127, 49, 26, 13);
+  g.fill(NOSE, 1); g.ellipse(144, 54, 12, 9);
+  // Upright ears (alert) — black outer, tan inner
+  g.fill(BLK, 1); g.tri(98, 6, 92, 34, 110, 30); g.tri(122, 4, 116, 32, 134, 28);
+  g.fill(TAN2, 1); g.tri(101, 15, 98, 32, 108, 30); g.tri(124, 13, 121, 30, 130, 28);
+  // Tan eyebrow markings, calm amber eyes, glints
+  g.fill(TAN2, 1); g.ellipse(110, 40, 9, 5); g.ellipse(124, 38, 9, 5);
+  g.fill('#3a2a14', 1); g.circle(111, 46, 4); g.circle(124, 44, 4);
+  g.fill('#a9762f', 1); g.circle(111, 46, 2); g.circle(124, 44, 2);
+  g.fill('#ffffff', 1); g.circle(112, 45, 1); g.circle(125, 43, 1);
+  // Calm closed mouth (a steady line — no teeth, no snarl)
+  g.fill(NOSE, 1); g.rect(133, 63, 13, 1.6);
+  ctx.globalAlpha = 1;
+}
+
+// Training field: sky, grass, a low fence, and three lane markers.
+function drawAcademyField(ctx) {
+  const g = pen(ctx);
+  g.fill('#bfe3f2', 1); g.rect(0, 0, GW, 300);                    // sky
+  g.fill('#fff1a8', 1); g.circle(330, 70, 26);                    // sun
+  g.fill('#8fcf6b', 1); g.rect(0, 300, GW, GH - 300);             // grass
+  g.fill('#7cbe59', 1); g.ellipse(195, 470, 360, 70);            // mown ring
+  // Simple back fence
+  g.fill('#caa472', 1); g.rect(0, 286, GW, 8);
+  for (let x = 20; x < GW; x += 46) { g.fill('#b8915f', 1); g.rect(x, 262, 7, 30); }
+  // Soft training cones (orange) for academy feel
+  g.fill('#e8702a', 1); g.tri(60, 330, 50, 360, 70, 360); g.tri(330, 330, 320, 360, 340, 360);
+  ctx.globalAlpha = 1;
+}
+
+/* ── STAGE 2 — Ila's Working Dog Academy (three IGP-inspired drills) ── */
+const OBEY_SEQUENCE = ['sit', 'heel', 'down', 'stay'];
+const OBEY_LABELS = { sit: 'Sit', heel: 'Heel', down: 'Down', stay: 'Stay' };
+
+class Stage2Scene extends Scene {
+  enter() {
+    this.game.setAccent('ila');
+    this.game.setHud('Stage 2');
+    this.game.state.flags.stage2Started = true;
+    this.t = 0;
+    this.drill = null;          // 'tracking' | 'obedience' | 'control'
+    this.awaitingInput = false; // true only when a drill expects a tap
+    this.obeyIndex = 0;
+    this.outCalled = false;
+    this.canvas = document.getElementById('game-canvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.layer = document.getElementById('stage2-layer');
+    this.layer.style.display = 'block';
+    this._setProgress('Ila’s Academy', 0);
+    SFX.motif('ila');
+    this._intro();
+  }
+
+  _say(lines, onDone) { this.game.dialogue.show(lines, onDone); }
+  _setProgress(label, frac) {
+    document.getElementById('s2-progress-label').textContent = label;
+    document.getElementById('s2-progress-fill').style.width = Math.round(frac * 100) + '%';
+  }
+  _showDrill(id) {
+    ['s2-track', 's2-obey', 's2-control'].forEach(d =>
+      document.getElementById(d).style.display = (d === id ? 'block' : 'none'));
+  }
+
+  _intro() {
+    this._say([
+      { speaker: 'Ila', text: 'Welcome, Merlin. I am Ila. This is the academy.' },
+      { speaker: 'Ila', text: 'A working dog is not the loudest dog. It is the dog who waits, watches, and acts only when asked.' },
+      { speaker: 'Merlin', text: 'I am excellent at waiting. Unless snacks are involved.' },
+      { speaker: 'Ila', text: 'Then we begin. First — tracking.' },
+    ], () => this._startTracking());
+  }
+
+  /* Drill 1 — Tracking: tap the scent pawprints in order. */
+  _startTracking() {
+    this.drill = 'tracking';
+    this._setProgress('Drill 1 — Tracking', 0);
+    this._say([
+      { speaker: 'Ila', text: 'Follow the scent. Nose down, slow and steady. Touch each print in order.' },
+    ], () => this._revealTrack());
+  }
+  _revealTrack() {
+    const field = document.getElementById('s2-track');
+    field.innerHTML = '';
+    // A winding trail (percentages of the field).
+    this.trackPts = [[24, 78], [40, 66], [33, 52], [52, 44], [66, 54], [78, 40]];
+    this.trackNext = 0;
+    this.trackPts.forEach((p, i) => {
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.className = 's2-dot' + (i === 0 ? ' next' : '');
+      dot.setAttribute('data-idx', String(i));
+      dot.style.left = p[0] + '%';
+      dot.style.top = p[1] + '%';
+      dot.textContent = '🐾';
+      this.bind.on(dot, 'click', () => this._trackTap(i, dot));
+      field.appendChild(dot);
+    });
+    this._showDrill('s2-track');
+    this.awaitingInput = true;
+  }
+  _trackTap(i, dot) {
+    if (i !== this.trackNext) { SFX.tap(); return; } // out of order: gentle feedback, no progress
+    SFX.sniff();
+    dot.classList.remove('next');
+    dot.classList.add('done');
+    this.trackNext++;
+    this._setProgress('Drill 1 — Tracking', this.trackNext / this.trackPts.length);
+    if (this.trackNext >= this.trackPts.length) { this._completeTracking(); return; }
+    const nextDot = document.querySelector('.s2-dot[data-idx="' + this.trackNext + '"]');
+    if (nextDot) nextDot.classList.add('next');
+  }
+  _completeTracking() {
+    this.awaitingInput = false;
+    this.game.state.flags.stage2TrackingComplete = true;
+    this._showDrill(null);
+    this._say([{ speaker: 'Ila', text: 'Good. Patient and steady. That is tracking.' }], () => this._startObedience());
+  }
+
+  /* Drill 2 — Obedience: Ila demonstrates, then tap the called command. */
+  _startObedience() {
+    this.drill = 'obedience';
+    this.obeyIndex = 0;
+    this._setProgress('Drill 2 — Obedience', 0);
+    this._say([
+      { speaker: 'Ila', text: 'Now, obedience. Watch me first: Sit. Heel. Down. Stay.' },
+      { speaker: 'Ila', text: 'Your turn. Tap the command I call — only when I call it.' },
+    ], () => this._revealObey());
+  }
+  _revealObey() {
+    const wrap = document.getElementById('s2-obey-buttons');
+    wrap.innerHTML = '';
+    OBEY_SEQUENCE.forEach(cmd => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 's2-cmd'; b.setAttribute('data-cmd', cmd);
+      b.textContent = OBEY_LABELS[cmd];
+      this.bind.on(b, 'click', () => this._obeyTap(cmd));
+      wrap.appendChild(b);
+    });
+    this._showDrill('s2-obey');
+    this.awaitingInput = true;
+    this._obeyPrompt();
+  }
+  _obeyPrompt() {
+    const cmd = OBEY_SEQUENCE[this.obeyIndex];
+    document.getElementById('s2-obey-cue').textContent = 'Ila says: “' + OBEY_LABELS[cmd] + '!”';
+  }
+  _obeyTap(cmd) {
+    const expected = OBEY_SEQUENCE[this.obeyIndex];
+    if (cmd !== expected) { SFX.tap(); return; }   // Assist: wrong tap just re-prompts, no penalty
+    SFX.cheer();
+    this.obeyIndex++;
+    this._setProgress('Drill 2 — Obedience', this.obeyIndex / OBEY_SEQUENCE.length);
+    if (this.obeyIndex >= OBEY_SEQUENCE.length) { this._completeObedience(); return; }
+    this._obeyPrompt();
+  }
+  _completeObedience() {
+    this.awaitingInput = false;
+    this.game.state.flags.stage2ObedienceComplete = true;
+    this._showDrill(null);
+    this._say([{ speaker: 'Ila', text: 'Precise. You listened well.' }], () => this._startControl());
+  }
+
+  /* Drill 3 — Control: hold, then RELEASE on Ila's "Out!". */
+  _startControl() {
+    this.drill = 'control';
+    this.outCalled = false;
+    this._setProgress('Drill 3 — Control', 0);
+    this._say([
+      { speaker: 'Ila', text: 'The last lesson is the hardest. Take the sleeve. Hold.' },
+      { speaker: 'Merlin', text: 'Holding! I am SO good at holding.' },
+      { speaker: 'Ila', text: 'Out.' },
+    ], () => this._controlPrompt());
+  }
+  _controlPrompt() {
+    this.outCalled = true;
+    document.getElementById('s2-control-prompt').textContent = 'Ila: “Out!”';
+    const wrap = document.getElementById('s2-control-buttons');
+    wrap.innerHTML = '';
+    const release = document.createElement('button');
+    release.type = 'button'; release.className = 's2-ctrl-btn release'; release.setAttribute('data-action', 'release');
+    release.textContent = '✓ Release the sleeve (Out!)';
+    this.bind.on(release, 'click', () => this._controlReleased());
+    const hold = document.createElement('button');
+    hold.type = 'button'; hold.className = 's2-ctrl-btn hold'; hold.setAttribute('data-action', 'hold');
+    hold.textContent = '🦴 Keep holding (it’s a good sleeve)';
+    this.bind.on(hold, 'click', () => this._controlHold());
+    wrap.appendChild(release); wrap.appendChild(hold);
+    this._showDrill('s2-control');
+    this.awaitingInput = true;
+  }
+  _controlHold() {
+    // Over-eager comedy — a gentle redo, never a fail or a reward.
+    this.awaitingInput = false;
+    this._showDrill(null);
+    this._say([
+      { speaker: 'Merlin', text: 'But I worked so hard for this sleeve.' },
+      { speaker: 'Ila', text: 'Out, Merlin.' },
+    ], () => this._controlPrompt());
+  }
+  _controlReleased() {
+    this.awaitingInput = false;
+    this.game.state.flags.stage2ControlComplete = true;
+    this._setProgress('Drill 3 — Control', 1);
+    this._showDrill(null);
+    this._say([
+      { speaker: 'Merlin', text: 'Okay. Out. Very disciplined. Look at me.' },
+      { speaker: 'Ila', text: 'That is the lesson. The hard part of strength is stopping.' },
+    ], () => this._outro());
+  }
+
+  _outro() {
+    this.game.state.flags.stage2Complete = true;
+    this.game.state.stars['stage2-academy'] = 3;
+    this._say([
+      { speaker: 'Ila', text: 'Good. You have heart. Control comes with time.' },
+      { speaker: 'Merlin', text: 'I have heart. I also have tired paws.' },
+      { speaker: 'Ila', text: 'Then you are learning.' },
+      { speaker: 'Merlin', text: 'Next job trial, please!' },
+    ], () => this.game.goToStage('stage3-fight'));
+  }
+
+  /* Debug/test support — small helpers that reuse the real completion paths. */
+  getDrillState() {
+    return {
+      mentor: 'ila',
+      drill: this.drill,
+      awaitingInput: this.awaitingInput,
+      expected: this.drill === 'obedience' ? OBEY_SEQUENCE[this.obeyIndex] : null,
+      outCalled: this.outCalled,
+    };
+  }
+  autoPlayDrill() {
+    if (!this.awaitingInput) return false;
+    if (this.drill === 'tracking') { this._completeTracking(); return true; }
+    if (this.drill === 'obedience') { this._completeObedience(); return true; }
+    if (this.drill === 'control') { this._controlReleased(); return true; }
+    return false;
+  }
+
+  update(dt) { this.t += dt; }
+  render() {
+    if (!this.ctx) return;
+    drawAcademyField(this.ctx);
+    const ctx = this.ctx, bob = Math.sin(this.t / 520) * 3, wag = Math.sin(this.t / 220);
+    // Merlin (left, facing right)
+    ctx.save(); ctx.translate(8, 300 + bob); ctx.scale(1.5, 1.5); drawMerlin(ctx, wag * 0.6); ctx.restore();
+    // Ila (right, mirrored to face left) — steady, minimal motion
+    ctx.save(); ctx.translate(384, 300); ctx.scale(-1.5, 1.5); drawIla(ctx); ctx.restore();
+  }
+
+  exit() {
+    this.layer.style.display = 'none';
+    ['s2-track', 's2-obey', 's2-control'].forEach(d => { const e = document.getElementById(d); if (e) e.style.display = 'none'; });
+    document.getElementById('s2-track').innerHTML = '';
+    document.getElementById('s2-obey-buttons').innerHTML = '';
+    document.getElementById('s2-control-buttons').innerHTML = '';
+    if (this.ctx) this.ctx.clearRect(0, 0, GW, GH);
+    this.game.dialogue.hide();
+    super.exit();
+  }
+}
+
 /* ── Ending scene ── */
 class EndScene extends Scene {
   enter() {
@@ -407,6 +693,7 @@ class EndScene extends Scene {
 /* ── Scenes that replace the Milestone 0 placeholder for a given stage. ── */
 const SCENE_OVERRIDES = {
   'stage1-career-crisis': Stage1Scene,
+  'stage2-academy': Stage2Scene,
 };
 
 /* ── Tiny view helpers ── */
@@ -483,6 +770,20 @@ const game = {
       parts.push('Merlin Gets a Job', 'The End', "Merlin's real job: making the boys happy.");
       return parts.join(' \n ');
     },
+    // Deterministic advancement helpers (avoid timing-sensitive UI clicks in tests).
+    advanceDialogue() {
+      const d = game.dialogue;
+      if (d && d.box.style.display !== 'none') { d.advance(); return true; }
+      return false;
+    },
+    drainDialogue(max) {
+      const d = game.dialogue; let n = 0; const cap = max || 80;
+      while (d && d.box.style.display !== 'none' && n < cap) { d.advance(); n++; }
+      return n;
+    },
+    // Stage 2 hooks (delegate to the live scene; reuse real completion paths).
+    stage2GetDrill() { return game.scene && game.scene.getDrillState ? game.scene.getDrillState() : null; },
+    stage2AutoPlayDrill() { return game.scene && game.scene.autoPlayDrill ? game.scene.autoPlayDrill() : false; },
   },
 };
 window.__merlinGame = game;

@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=0.2">
+<link rel="stylesheet" href="style.css?v=0.3">
 </head>
 <body data-accent="home" data-stage="title">
 
@@ -83,6 +83,27 @@
         </div>
       </div>
 
+      <!-- Stage 2 interactive layer (three IGP-inspired drills). -->
+      <div id="stage2-layer" style="display:none">
+        <div id="s2-progress">
+          <span id="s2-progress-label">Drill</span>
+          <div id="s2-progress-bar"><div id="s2-progress-fill"></div></div>
+        </div>
+        <!-- Drill 1: Tracking (tap the scent pawprints in order). -->
+        <div id="s2-track" class="s2-drill" style="display:none"></div>
+        <!-- Drill 2: Obedience (tap the called command). -->
+        <div id="s2-obey" class="s2-drill" style="display:none">
+          <div id="s2-obey-cue"></div>
+          <div id="s2-obey-buttons"></div>
+        </div>
+        <!-- Drill 3: Control / release on command. -->
+        <div id="s2-control" class="s2-drill" style="display:none">
+          <div id="s2-control-sleeve">🧤</div>
+          <div id="s2-control-prompt"></div>
+          <div id="s2-control-buttons"></div>
+        </div>
+      </div>
+
       <!-- Shared dialogue box (used from Stage 1 onward). -->
       <div id="dialogue-box" style="display:none">
         <div class="dlg-speaker" id="dlg-speaker"></div>
@@ -94,6 +115,6 @@
   </div><!-- #game-frame -->
 </div><!-- #viewport -->
 
-<script src="game.js?v=0.2"></script>
+<script src="game.js?v=0.3"></script>
 </body>
 </html>

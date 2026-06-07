@@ -44,13 +44,11 @@ test('start button enters stage 1', async ({ page }) => {
 // ═══════════════════════════════════════════════════════════
 test('walks every placeholder stage in order and reaches the ending', async ({ page }) => {
   await page.goto('/');
-  await page.locator('#start-btn').click();
-  await waitForStage(page, 'stage1-career-crisis');
 
-  // Stage 1 is interactive (see stage1.spec.js); jump to the placeholder chain (stages 2–7).
-  await page.evaluate(() => window.__merlinGame.goToStage('stage2-academy'));
+  // Stages 1–2 are full scenes (see stage1/stage2 specs); jump to the placeholder chain (stages 3–7).
+  await page.evaluate(() => window.__merlinGame.goToStage('stage3-fight'));
 
-  for (let i = 1; i < STAGE_IDS.length; i++) {
+  for (let i = 2; i < STAGE_IDS.length; i++) {
     await waitForStage(page, STAGE_IDS[i]);
     await expect(page.locator('#sv-badge')).toContainText('Stage ' + (i + 1));
     if (i < STAGE_IDS.length - 1) await page.locator('#stage-continue').click();
@@ -127,25 +125,25 @@ test('seeded RNG is deterministic', async ({ page }) => {
 // ═══════════════════════════════════════════════════════════
 test('scene teardown runs and listeners do not accumulate', async ({ page }) => {
   await page.goto('/');
-  // Drive the identical placeholder scenes (stages 2–7) to measure listener stability.
-  await page.evaluate(() => window.__merlinGame.goToStage('stage2-academy'));
-  await waitForStage(page, 'stage2-academy');
+  // Drive the identical placeholder scenes (stages 3–7) to measure listener stability.
+  await page.evaluate(() => window.__merlinGame.goToStage('stage3-fight'));
+  await waitForStage(page, 'stage3-fight');
 
   const exitsBefore = await page.evaluate(() => window.__merlinGame.debug.exitCount);
   await page.locator('#stage-continue').click();
-  await waitForStage(page, 'stage3-fight');
-  const atStage3 = await page.evaluate(() => window.__merlinGame.debug.activeListenerCount());
+  await waitForStage(page, 'stage4-sniff');
+  const atStage4 = await page.evaluate(() => window.__merlinGame.debug.activeListenerCount());
 
   // Advance several more placeholder stages.
-  for (const id of ['stage4-sniff', 'stage5-birddog', 'stage6-hades']) {
+  for (const id of ['stage5-birddog', 'stage6-hades', 'stage7-realjob']) {
     await page.locator('#stage-continue').click();
     await waitForStage(page, id);
   }
-  const atStage6 = await page.evaluate(() => window.__merlinGame.debug.activeListenerCount());
+  const atStage7 = await page.evaluate(() => window.__merlinGame.debug.activeListenerCount());
   const exitsAfter = await page.evaluate(() => window.__merlinGame.debug.exitCount);
 
   // Placeholder scenes are structurally identical → identical live-listener count.
-  expect(atStage6).toBe(atStage3);
+  expect(atStage7).toBe(atStage4);
   // exit() fired for each transition.
   expect(exitsAfter).toBeGreaterThan(exitsBefore);
 });

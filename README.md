@@ -16,7 +16,22 @@ See the design docs for the full vision: [`DESIGN_BIBLE.md`](DESIGN_BIBLE.md),
 
 ## Status
 
-### Milestone 1 — Stage 1: "Merlin's Career Crisis" ✅ (current)
+### Milestone 2 — Stage 2: "Ila's Working Dog Academy" ✅ (current)
+
+Merlin's first apprenticeship: three short, distinct IGP-inspired drills under **Ila**, a
+code-drawn black-and-tan working-line German Shepherd (tan points, upright ears, calm steady
+stance — disciplined and kind, never aggressive).
+
+- **Drill 1 — Tracking:** tap the scent pawprints in order; patient, steady scent-following.
+- **Drill 2 — Obedience:** Ila demonstrates, then you tap the called command (Sit / Heel /
+  Down / Stay) — listening and precision.
+- **Drill 3 — Control:** hold the padded sleeve, then **release on Ila's "Out!"**. Releasing is
+  rewarded; "keep holding" triggers a gentle comedy redo, never a fail. The lesson is that the
+  hard part of strength is *stopping* — control and trust, not aggression.
+- A progress indicator per drill; Assist mode cannot dead-end (a debug auto-play path drives
+  each drill to completion). Hands off to `stage3-fight`.
+
+### Milestone 1 — Stage 1: "Merlin's Career Crisis" ✅
 
 The first **shareable** build. A warm visual-novel intro you can play title → Stage 2:
 
@@ -87,6 +102,14 @@ The test config (`tests/playwright.config.js`) auto-starts a static server on po
 - `tests/stage1.spec.js` — the **For Cyndie** dedication, Stage 1 real content (not the
   placeholder), dialogue advance, glowing-object tap, mentor montage (Ila/Chinook/Hades),
   the first-job choice recording state, handoff to Stage 2, and no listener leaks on replay.
+- `tests/stage2.spec.js` — Stage 2 real content, direct entry + Ila identification, each of
+  the three drills completing and setting its flag, control rewarding **release on "Out!"**
+  (and holding giving a redo, not completion), full Assist auto-play → Stage 3, and a
+  family-safe / control-focused content guardrail.
+
+> Note: clickable elements use `box-shadow`-only glow pulses (never animated `transform`), and
+> tests advance via debug hooks (`drainDialogue`, `stage2AutoPlayDrill`) rather than
+> timing-sensitive clicks — both keep the Playwright suite fast and deterministic.
 
 ---
 
