@@ -16,7 +16,22 @@ See the design docs for the full vision: [`DESIGN_BIBLE.md`](DESIGN_BIBLE.md),
 
 ## Status
 
-### Milestone 4 — Stage 4: "Chinook's Big Sniff" ✅ (current)
+### Milestone 5 — Stage 5: "Merlin Goes Bird Dog" ✅ (current)
+
+The "anti-Duck-Hunt" — the slow, patient reality behind the gallery. Merlin tries the real
+bird-dog job himself and learns it's hard, careful work.
+
+- Each find is a **scent-follow** (steady steps toward the bird) → **hold the point**
+  (press-and-hold restraint meter) → **gentle flush on the handler's cue** (`Easy… easy… now`)
+  so the **bird flies free**. No shooting, no catching, nothing is hurt.
+- A rising **fatigue** meter across 3 escalating finds makes the work *feel* tiring; Merlin
+  droops as he tires. The flush is locked until the handler's cue.
+- A reflective tonal pivot: Merlin ends exhausted, respecting Chinook, openly wondering
+  "it's just… not me, is it." (seeds the finale).
+- Flags `stage5Find{1,2,3}Complete` + `stage5Complete`; hands off to `stage6-hades`. Assist
+  mode cannot dead-end.
+
+### Milestone 4 — Stage 4: "Chinook's Big Sniff" ✅
 
 A family-safe Duck-Hunt-style spot-and-tap gallery — **not shooting**. **Chinook** (a sweet,
 droopy 6-month-old bloodhound) **points**; you tap what he found.
@@ -142,6 +157,10 @@ The test config (`tests/playwright.config.js`) auto-starts a static server on po
   sanity check, point-before-target telegraph, duck **fly-off** / clay **puff**, non-failing
   decoys, score/combo, the Big Sniff bonus, **deterministic spawns under `rngSeed`**, full
   Assist auto-play through all waves → Stage 5, and a family-safe guardrail (no shooting).
+- `tests/stage5.spec.js` — Stage 5 real content, direct entry, a canvas sanity check, scent
+  strength → point phase, point-completes-via-hold, **flush locked until the cue**, gentle
+  flush → **bird fly-free**, rising fatigue across finds, full Assist auto-play → Stage 6, and
+  a family-safe guardrail (no shooting/catching; birds fly free).
 
 > Note: clickable elements use `box-shadow`-only glow pulses (never animated `transform`), and
 > tests advance via debug hooks (`drainDialogue`, `stage2AutoPlayDrill`) rather than

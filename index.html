@@ -137,6 +137,23 @@
         <div id="s4-banner" style="display:none"></div>
       </div>
 
+      <!-- Stage 5 interactive layer (patient bird-dog fieldwork). -->
+      <div id="stage5-layer" style="display:none">
+        <div id="s5-hud"><span id="s5-find">Find 1 of 3</span></div>
+        <div id="s5-meters">
+          <div class="s5-meter"><span class="s5-meter-label">Scent</span><div class="s5-bar"><div id="s5-scent-fill"></div></div></div>
+          <div class="s5-meter"><span class="s5-meter-label">Point</span><div class="s5-bar"><div id="s5-point-fill"></div></div></div>
+          <div class="s5-meter"><span class="s5-meter-label">Tired</span><div class="s5-bar tired"><div id="s5-fatigue-fill"></div></div></div>
+        </div>
+        <div id="s5-cue" style="display:none"></div>
+        <div id="s5-banner" style="display:none"></div>
+        <div id="s5-controls">
+          <button id="s5-scent-btn" class="s5-btn" type="button">👃 Follow the scent</button>
+          <button id="s5-hold-btn" class="s5-btn" type="button" style="display:none">🐾 Hold the point (press &amp; hold)</button>
+          <button id="s5-flush-btn" class="s5-btn flush" type="button" style="display:none" disabled>🕊️ Flush gently</button>
+        </div>
+      </div>
+
       <!-- Shared dialogue box (used from Stage 1 onward). -->
       <div id="dialogue-box" style="display:none">
         <div class="dlg-speaker" id="dlg-speaker"></div>

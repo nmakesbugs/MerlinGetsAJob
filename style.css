@@ -388,8 +388,53 @@ body[data-accent="hades"]   { --accent: #8a5fc0; --accent-deep: #4a2f80; }
 .s4-target.puff { transition: transform .3s ease, opacity .3s ease; transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
 .s4-target.gone { transition: opacity .25s ease; opacity: 0; }
 
+/* ================================================================
+   STAGE 5 — Merlin Goes Bird Dog (patient fieldwork)
+   ================================================================ */
+#stage5-layer { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+#stage5-layer > * { pointer-events: auto; }
+
+#s5-hud {
+  position: absolute; top: 44px; left: 0; right: 0; text-align: center;
+  font-weight: 800; font-size: 14px; color: var(--accent-deep);
+}
+#s5-meters { position: absolute; top: 70px; left: 14px; right: 14px; display: flex; flex-direction: column; gap: 5px; }
+.s5-meter { display: flex; align-items: center; gap: 8px; }
+.s5-meter-label { font-weight: 800; font-size: 12px; color: var(--accent-deep); width: 52px; }
+.s5-bar { flex: 1; height: 11px; background: rgba(138,61,24,.16); border-radius: 999px; overflow: hidden; }
+.s5-bar > div { height: 100%; width: 0%; background: var(--accent-deep); border-radius: 999px; transition: width .18s ease; }
+.s5-bar.tired > div { background: #c77a3a; }
+
+#s5-cue {
+  position: absolute; top: 150px; left: 50%; transform: translateX(-50%);
+  font-family: 'Fredoka One','Nunito',cursive; font-size: 22px; color: var(--accent-deep);
+  background: var(--paper); border: 2px solid var(--accent-deep); border-radius: 14px; padding: 8px 18px;
+}
+#s5-banner {
+  position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%);
+  font-family: 'Fredoka One','Nunito',cursive; font-size: 24px; color: var(--accent-deep);
+  background: var(--paper); border: 3px solid var(--accent-deep); border-radius: 16px;
+  padding: 12px 20px; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,.3); max-width: 320px;
+}
+
+#s5-controls { position: absolute; left: 16px; right: 16px; bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
+.s5-btn {
+  font-family: 'Nunito',sans-serif; font-weight: 800; font-size: 17px; color: #fff;
+  background: var(--accent-deep); border: none; padding: 16px; border-radius: 14px;
+  cursor: pointer; box-shadow: 0 4px 0 #6a3a18; touch-action: none;
+}
+.s5-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #6a3a18; }
+.s5-btn:disabled { opacity: .45; box-shadow: 0 2px 0 #6a3a18; cursor: default; }
+.s5-btn.flush { background: var(--accent); box-shadow: 0 4px 0 var(--accent-deep); }
+/* box-shadow-only pulse keeps the flush button clickable when enabled */
+.s5-btn.flush.ready { animation: s5flush 1s ease-in-out infinite; }
+@keyframes s5flush {
+  0%,100% { box-shadow: 0 4px 0 var(--accent-deep), 0 0 4px 1px rgba(196,98,45,.35); }
+  50%     { box-shadow: 0 4px 0 var(--accent-deep), 0 0 20px 8px rgba(196,98,45,.7); }
+}
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .big-btn, .mentor-card { transition: none; }
-  #glow-bowl, #stage1-hint, .s2-dot.next, .s3-finisher.ready, .s4-target.primary { animation: none; }
+  #glow-bowl, #stage1-hint, .s2-dot.next, .s3-finisher.ready, .s4-target.primary, .s5-btn.flush.ready { animation: none; }
 }

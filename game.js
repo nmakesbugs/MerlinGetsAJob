@@ -1220,6 +1220,251 @@ class Stage4Scene extends Scene {
   }
 }
 
+/* ================================================================
+   STAGE 5 — Merlin Goes Bird Dog (the "anti-Duck-Hunt").
+   Slow, patient field work: follow the SCENT, hold a steady POINT, then
+   GENTLY FLUSH on the handler's cue so the bird flies FREE. No shooting,
+   no catching, nothing is hurt. Fatigue rises so the work feels real.
+   Fixed (deterministic) find paths — no RNG needed.
+   ================================================================ */
+const S5_FIND_STEPS = [4, 6, 8];      // scent steps per find (escalating)
+const S5_FINDS = 3;
+const STAGE5_TEXT = {
+  intro: [
+    { speaker: 'Chinook', text: 'Now comes the quiet part. You smell it, find it, point, and wait.' },
+    { speaker: 'Merlin', text: 'Wait after finding it?' },
+    { speaker: 'Chinook', text: 'That’s the job!' },
+    { speaker: 'Merlin', text: 'This job has a surprising amount of not-doing-the-thing.' },
+  ],
+  cue: [
+    { speaker: 'Handler', text: 'Easy… easy…' },
+    { speaker: 'Handler', text: '…now.' },
+  ],
+  outro: [
+    { speaker: 'Merlin', text: 'I found it and I didn’t pounce and the bird is fine and the human is happy and I am… so tired.' },
+    { speaker: 'Merlin', text: 'This is real work. Slow, and careful, and it’s for someone else.' },
+    { speaker: 'Merlin', text: 'Chinook’s going to be amazing at this.' },
+    { speaker: 'Merlin', text: 'It’s just… not me, is it.' },
+  ],
+  flushBanner: 'The bird flies free! 🕊️',
+  steady: 'Steady… hold it.',
+};
+
+// Calm meadow — softer palette than the Stage 4 gallery.
+function drawBirdField(ctx) {
+  const g = pen(ctx);
+  g.fill('#cfe6f0', 1); g.rect(0, 0, GW, 300);
+  g.fill('#f3efb0', 1); g.circle(322, 60, 22);
+  g.fill('#ffffff', 0.7); g.ellipse(120, 80, 80, 26); g.ellipse(252, 96, 92, 28);
+  g.fill('#cfe09a', 1); g.rect(0, 300, GW, GH - 300);
+  g.fill('#b9d27e', 1); g.ellipse(195, 470, 400, 90);
+  g.fill('#9bbf5e', 1);
+  for (let x = 10; x < GW; x += 34) { g.tri(x, GH - 40, x - 7, GH - 92, x + 7, GH - 92); g.tri(x + 14, GH - 40, x + 7, GH - 80, x + 21, GH - 80); }
+  ctx.globalAlpha = 1;
+}
+
+class Stage5Scene extends Scene {
+  enter() {
+    this.game.setAccent('chinook');
+    this.game.setHud('Stage 5');
+    this.game.state.flags.stage5Started = true;
+    this.t = 0;
+    this.findIndex = 0;
+    this.phase = 'intro';     // intro|scent|point|cue|flushed|outro
+    this.scentStep = 0;
+    this.holdMeter = 0;
+    this.holding = false;
+    this.cueReady = false;
+    this.fatigue = 0;
+    this.lastFlush = null;
+    this.canvas = document.getElementById('game-canvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.layer = document.getElementById('stage5-layer');
+    this.cueEl = document.getElementById('s5-cue');
+    this.banner = document.getElementById('s5-banner');
+    this.scentBtn = document.getElementById('s5-scent-btn');
+    this.holdBtn = document.getElementById('s5-hold-btn');
+    this.flushBtn = document.getElementById('s5-flush-btn');
+    this.layer.style.display = 'block';
+    this.bind.on(this.scentBtn, 'click', () => this._advanceScent());
+    this.bind.on(this.holdBtn, 'pointerdown', (e) => { e.preventDefault(); this.holding = true; });
+    this.bind.on(this.holdBtn, 'pointerup', () => this._holdRelease());
+    this.bind.on(this.holdBtn, 'pointerleave', () => this._holdRelease());
+    this.bind.on(this.flushBtn, 'click', () => this._flush());
+    SFX.motif('chinook');
+    this._updateHud();
+    this.game.dialogue.show(STAGE5_TEXT.intro, () => this._startFind(0));
+  }
+
+  _assist() { return this.game.state.assistMode; }
+  _scentTotal() { return S5_FIND_STEPS[this.findIndex]; }
+  _scentStrength() { return Math.round((this.scentStep / this._scentTotal()) * 100); }
+  _holdMs() { return this._assist() ? 1200 : 2200; }
+
+  _updateHud() {
+    document.getElementById('s5-find').textContent = 'Find ' + (this.findIndex + 1) + ' of ' + S5_FINDS;
+    document.getElementById('s5-scent-fill').style.width = this._scentStrength() + '%';
+    document.getElementById('s5-point-fill').style.width = Math.min(100, this.holdMeter) + '%';
+    document.getElementById('s5-fatigue-fill').style.width = Math.min(100, this.fatigue) + '%';
+  }
+  _banner(text, ms) { this.banner.textContent = text; this.banner.style.display = 'block'; this.bind.timeout(() => { this.banner.style.display = 'none'; }, ms || 1000); }
+
+  _setPhase(p) {
+    this.phase = p;
+    this.scentBtn.style.display = p === 'scent' ? 'block' : 'none';
+    this.holdBtn.style.display = p === 'point' ? 'block' : 'none';
+    this.flushBtn.style.display = p === 'cue' ? 'block' : 'none';
+    if (p !== 'cue') { this.cueEl.style.display = 'none'; this.flushBtn.disabled = true; this.flushBtn.classList.remove('ready'); }
+  }
+
+  _startFind(i) {
+    this.findIndex = i;
+    this.scentStep = 0;
+    this.holdMeter = 0;
+    this.cueReady = false;
+    this._updateHud();
+    SFX.sniff();
+    this._setPhase('scent');
+  }
+
+  _advanceScent() {
+    if (this.phase !== 'scent') return false;
+    this.scentStep += 1;
+    this.fatigue = Math.min(100, this.fatigue + 2);
+    SFX.sniff();
+    this._updateHud();
+    if (this.scentStep >= this._scentTotal()) this._beginPoint();
+    return true;
+  }
+
+  _beginPoint() {
+    this.holdMeter = 0;
+    this._setPhase('point');
+    this._banner(STAGE5_TEXT.steady, 900);
+  }
+
+  _holdRelease() {
+    if (this.phase === 'point' && this.holding && this.holdMeter < 100) {
+      this.holding = false;
+      this.holdMeter = 0;            // gentle reset — restraint is hard, but never a fail
+      this._updateHud();
+    }
+    this.holding = false;
+  }
+
+  _pointComplete() {
+    this.holding = false;
+    this.holdMeter = 100;
+    this._updateHud();
+    SFX.pant();
+    this._setPhase('cue');
+    this.cueEl.textContent = STAGE5_TEXT.cue[0].text;
+    this.cueEl.style.display = 'block';
+    this.flushBtn.disabled = true;
+    this.game.dialogue.show(STAGE5_TEXT.cue, () => {
+      this.cueReady = true;
+      this.cueEl.textContent = 'now — flush gently!';
+      this.flushBtn.disabled = false;
+      this.flushBtn.classList.add('ready');
+    });
+  }
+
+  _flush() {
+    if (this.phase !== 'cue' || !this.cueReady) return false;
+    this.lastFlush = 'fly-free';
+    this.game.state.flags['stage5Find' + (this.findIndex + 1) + 'Complete'] = true;
+    this.fatigue = Math.min(100, this.fatigue + 28);
+    SFX.poof(); SFX.cheer();
+    this._setPhase('flushed');
+    this._banner(STAGE5_TEXT.flushBanner, 1100);
+    this._updateHud();
+    if (this.findIndex + 1 < S5_FINDS) this._startFind(this.findIndex + 1);
+    else this._outro();
+    return true;
+  }
+
+  _outro() {
+    this._setPhase('outro');
+    this.game.state.flags.stage5Complete = true;
+    this.game.state.stars['stage5-birddog'] = 3;
+    SFX.sigh();
+    this.game.dialogue.show(STAGE5_TEXT.outro, () => this.game.goToStage('stage6-hades'));
+  }
+
+  update(dt) {
+    this.t += dt;
+    if (this.holding && this.phase === 'point') {
+      this.holdMeter = Math.min(100, this.holdMeter + (dt / this._holdMs()) * 100);
+      this._updateHud();
+      if (this.holdMeter >= 100) this._pointComplete();
+    }
+  }
+
+  render() {
+    if (!this.ctx) return;
+    const ctx = this.ctx, t = this.t, tired = this.fatigue / 100;
+    drawBirdField(ctx);
+    ctx.save(); ctx.translate(372, 372); ctx.scale(-0.85, 0.85); drawChinook(ctx); ctx.restore();   // supportive cameo (right)
+    const wag = this.phase === 'point' ? 0.06 * Math.sin(t / 110) : Math.sin(t / 240) * 0.5;
+    const bob = Math.sin(t / (520 + tired * 420)) * (3 - tired * 1.6);
+    ctx.save(); ctx.translate(64, 360 + tired * 12 + bob); ctx.scale(1.4, 1.4); drawMerlin(ctx, wag); ctx.restore();
+    if (this.phase === 'scent' || this.phase === 'point') {
+      ctx.save(); ctx.strokeStyle = 'rgba(120,160,90,0.5)'; ctx.setLineDash([4, 6]); ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(258, 448); ctx.lineTo(330, 448 - this._scentStrength() * 0.5); ctx.stroke(); ctx.restore();
+    }
+  }
+
+  // ── Debug/test hooks (call the real production methods) ──
+  getState() {
+    return {
+      findIndex: this.findIndex,
+      phase: this.phase,
+      scentStep: this.scentStep,
+      scentTotal: this._scentTotal(),
+      scentStrength: this._scentStrength(),
+      holdMeter: this.holdMeter,
+      cueReady: this.cueReady,
+      fatigue: this.fatigue,
+      lastFlush: this.lastFlush,
+      flushAvailable: this.phase === 'cue' && this.cueReady,
+    };
+  }
+  advanceScent() { return this._advanceScent(); }
+  completePointHold() { if (this.phase === 'point') { this._pointComplete(); return true; } return false; }
+  flushOnCue() { return this._flush(); }
+  autoPlayFind() {
+    const start = this.findIndex; let guard = 0;
+    while (this.findIndex === start && this.game.state.currentStage === 'stage5-birddog' && guard++ < 50) {
+      if (this.game.dialogue.box.style.display !== 'none') { this.game.dialogue.advance(); continue; }
+      if (this.phase === 'scent') { this._advanceScent(); continue; }
+      if (this.phase === 'point') { this._pointComplete(); continue; }
+      if (this.phase === 'cue' && this.cueReady) { this._flush(); continue; }
+      break;
+    }
+    return this.fatigue;
+  }
+  autoPlayStage() {
+    let guard = 0;
+    while (this.game.state.currentStage === 'stage5-birddog' && guard++ < 120) {
+      if (this.game.dialogue.box.style.display !== 'none') { this.game.dialogue.advance(); continue; }
+      if (this.phase === 'scent') { this._advanceScent(); continue; }
+      if (this.phase === 'point') { this._pointComplete(); continue; }
+      if (this.phase === 'cue' && this.cueReady) { this._flush(); continue; }
+      break;
+    }
+    return this.game.state.currentStage;
+  }
+
+  exit() {
+    this.layer.style.display = 'none';
+    this.cueEl.style.display = 'none';
+    this.banner.style.display = 'none';
+    if (this.ctx) this.ctx.clearRect(0, 0, GW, GH);
+    this.game.dialogue.hide();
+    super.exit();
+  }
+}
+
 /* ── Ending scene ── */
 class EndScene extends Scene {
   enter() {
@@ -1239,6 +1484,7 @@ const SCENE_OVERRIDES = {
   'stage2-academy': Stage2Scene,
   'stage3-fight': Stage3Scene,
   'stage4-sniff': Stage4Scene,
+  'stage5-birddog': Stage5Scene,
 };
 
 /* ── Tiny view helpers ── */
@@ -1361,6 +1607,22 @@ const game = {
       parts.push(STAGE4_TEXT.bigSniff, STAGE4_TEXT.telegraph,
         STAGE4_TEXT.scold.butterfly, STAGE4_TEXT.scold.hat, STAGE4_TEXT.scold.hades,
         'spot', 'tap', 'find', 'point', 'poof', 'fly off', 'clay puff', 'scent spot');
+      return parts.join(' \n ');
+    },
+    // Stage 5 hooks (delegate to the live scene; reuse real production methods).
+    stage5GetState() { return game.scene && game.scene.getState ? game.scene.getState() : null; },
+    stage5AdvanceScent() { return game.scene && game.scene.advanceScent ? game.scene.advanceScent() : false; },
+    stage5CompletePointHold() { return game.scene && game.scene.completePointHold ? game.scene.completePointHold() : false; },
+    stage5FlushOnCue() { return game.scene && game.scene.flushOnCue ? game.scene.flushOnCue() : false; },
+    stage5AutoPlayFind() { return game.scene && game.scene.autoPlayFind ? game.scene.autoPlayFind() : null; },
+    stage5AutoPlayStage() { return game.scene && game.scene.autoPlayStage ? game.scene.autoPlayStage() : null; },
+    // All Stage 5 player-facing strings (for the family-safety guardrail scan).
+    stage5AllText() {
+      const parts = [];
+      STAGE5_TEXT.intro.concat(STAGE5_TEXT.cue, STAGE5_TEXT.outro).forEach(l => parts.push(l.text));
+      parts.push(STAGE5_TEXT.flushBanner, STAGE5_TEXT.steady,
+        'Follow the scent', 'Hold the point', 'Flush gently',
+        'scent', 'sniff', 'point', 'hold steady', 'wait', 'flush gently', 'bird flies free', 'help the human');
       return parts.join(' \n ');
     },
   },
