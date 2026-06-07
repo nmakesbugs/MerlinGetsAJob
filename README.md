@@ -16,7 +16,28 @@ See the design docs for the full vision: [`DESIGN_BIBLE.md`](DESIGN_BIBLE.md),
 
 ## Status
 
-### 0.91 — QA micro-patch ✅ (current)
+### 1.0 — Final QA / Deploy Polish ✅ (current · release candidate)
+
+Final readiness pass before GitHub Pages. No narrative expansion, no gameplay/mechanics changes.
+
+- **Static title-HUD artifact removed:** `index.html` no longer ships `<span id="hud-stage">Title</span>`
+  — the span starts empty, so there's no stray "Title" flash before JS boots. `TitleScene` still
+  calls `setHud('')` at runtime.
+- **Offline PWA support added:** a minimal versioned `sw.js` (cache-first, `merlin-gets-job-v1.0`),
+  registered silently and safely from `game.js`. See *Tech notes* below.
+- **Docs reconciled to the correct family geography:** Merlin lives with **Nick's family and the
+  three boys** (Merlin's boys). Cyndie *requested* the game and loves cuddling Merlin **when she
+  visits** Nick's house — Merlin is **not** Cyndie's dog and does **not** live with her. Hades is
+  Anthony & Cyndie's cat. Chinook is **male** (he/him). "For Cyndie" dedication intact. Fixed stale
+  framing in `DESIGN_BIBLE.md`, `CHARACTER_BIBLE.md`, and the `finalTableau` schema in
+  `CONTENT_SCHEMA.md` (mentor cameo icons, not Anthony/Cyndie).
+- **Cache bumped to `?v=1.0`** on `game.js` + `style.css`.
+- **Deploy hygiene verified:** no duplicate DOM IDs, every `getElementById` target exists in
+  `index.html`, no Assist/Challenge residue, no `debugger`/`console.log` debug noise, no temp
+  scripts, no committed `node_modules`/`test-results`.
+- Full suite: **111 passed, 0 failed** (110 + a new service-worker registration test).
+
+### 0.91 — QA micro-patch ✅
 
 Finalization of the 0.9 narrative pass:
 
@@ -40,8 +61,9 @@ Surgical writing pass — mechanics unchanged from 0.82/0.82.1.
   the first time, I can say it again. That is my policy.") — echoing Stage 1 without
   mentioning Cyndie.
 - **Stage 7 realization tightened (7 lines):** "The boys do not need me to be Ila / Chinook /
-  Hades. They need me to be theirs. To flop close enough that nobody has to ask if they are
-  loved. My job is making them happy. I had it the whole time."
+  Hades. They need me to be theirs. To find the toy, hold still, let the little one win, and
+  flop close enough that nobody has to ask if they are loved. My job is making them happy. I
+  had it the whole time." *(0.91 expanded the flop line into the mentor-action callback.)*
 - **Stage 7 tableau:** Hades adds one dry second line: "Do not tell him I said so."
 - Stage 5 outro first line sharpened for Merlin voice.
 - **Cyndie geography preserved throughout.** No line implies Merlin lives with Cyndie or that
@@ -318,9 +340,15 @@ The test config (`tests/playwright.config.js`) auto-starts a static server on po
   project deliberately stays pure vanilla DOM/Canvas per the design brief ("small static
   vanilla-JS arcade game"). The portable patterns — DOM UI overlay, procedural WebAudio,
   `DialogueManager`, and the Playwright/`http-server` test setup — were ported; Phaser was not.
-- **Service worker / offline:** **deferred to a later milestone.** The PWA `manifest.json` is
-  valid and the app is installable, but full offline support (a service worker) is not wired up
-  yet. Fonts currently load from Google Fonts CDN with a system-font fallback.
+- **Service worker / offline (1.0):** a tiny `sw.js` precaches the essential same-origin assets
+  (`./`, `index.html`, `game.js?v=1.0`, `style.css?v=1.0`, `manifest.json`) with a cache-first
+  strategy and a versioned cache name (`merlin-gets-job-v1.0`). It registers silently from
+  `game.js` (only over http/https, when `navigator.serviceWorker` exists) and does **not** call
+  `clients.claim()`, so offline support kicks in on the *next* visit and it never interferes with
+  the running session or the Playwright tests. **When you bump the cache `?v=` on a future
+  release, also bump the `CACHE` name and the `ASSETS` query strings in `sw.js`.** Fonts still
+  load from the Google Fonts CDN with a system-font fallback (those are cross-origin and pass
+  straight through to the network).
 
 ## Deploy (GitHub Pages)
 

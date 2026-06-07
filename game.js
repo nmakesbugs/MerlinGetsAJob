@@ -2519,6 +2519,15 @@ function loop(t) {
   requestAnimationFrame(loop);
 }
 
+/* ── Optional offline support (PWA). Silent + best-effort; never blocks boot. ── */
+function registerSW() {
+  if (!('serviceWorker' in navigator)) return;
+  if (location.protocol !== 'http:' && location.protocol !== 'https:') return; // not on file://
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => { /* offline cache is optional */ });
+  });
+}
+
 /* ── Boot ── */
 function boot() {
   game.dialogue = new DialogueManager();
@@ -2532,6 +2541,7 @@ function boot() {
 
   game.goToStage('title');
   requestAnimationFrame(loop);
+  registerSW();
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

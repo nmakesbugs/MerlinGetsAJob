@@ -57,9 +57,9 @@ Each sheet: **Who · Look · Voice/Personality · Animation set · Role in story
 
 ---
 
-## THE BOYS — the heart (Anthony & Cyndie's kids)
+## THE BOYS — the heart (Nick's boys)
 
-- **Who:** The family's young boys. The reason Merlin's real job matters. They adore Merlin.
+- **Who:** Nick's three young boys — Merlin's boys. The reason Merlin's real job matters. They adore Merlin.
 - **Look:** Warm, simple, joyful kid designs; keep them generic-but-lovable and respectful (no caricature). They appear mostly in Stage 1 (montage) and Stage 7 (finale), with a cameo squabble event in Stage 6.
 - **Voice/Personality:** Pure delight. Laughter, shrieks of joy, "Merlin!!", the group hug. Their happiness is the win condition of the whole game.
 - **Animation set:** running in, laughing, hugging, piling onto Merlin, the group tableau.
@@ -69,12 +69,12 @@ Each sheet: **Who · Look · Voice/Personality · Animation set · Role in story
 
 ---
 
-## ANTHONY & CYNDIE — the family (cameo)
+## ANTHONY & CYNDIE — visiting family (cameo)
 
-- **Who:** The parents; the home everyone belongs to. Cyndie is the person this game is *for.* They appear at the edges — the warmth the whole world rests on.
-- **Look/Role:** Brief, fond cameos (Stage 1 setup, Stage 7 tableau). Carry over any likeness/style cues from the prior game for continuity (e.g. the cheetah jacket gag if it fits). Keep affectionate and respectful.
-- **Do:** Use them to frame "home" as the place Merlin's real job lives.
-- **Don't:** Center the gameplay on them; they're the warm backdrop, the boys + Merlin are the focus.
+- **Who:** Extended family who visit. Cyndie is the person this game is *for* — she loves cuddling Merlin when she visits Nick's house. Hades is their cat. **Merlin lives with Nick's family, not with them.** They appear at the edges — affectionate, fond cameos.
+- **Look/Role:** Brief, fond cameos (Stage 1 setup). Carry over any likeness/style cues from the prior game for continuity (e.g. the cheetah jacket gag if it fits). Keep affectionate and respectful.
+- **Do:** Use them as warm visitors who adore Merlin (Cyndie especially loves cuddling him).
+- **Don't:** Imply Merlin is their dog or lives with them; the boys + Merlin (in Nick's home) are the focus.
 
 ---
 

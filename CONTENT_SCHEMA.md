@@ -218,7 +218,7 @@ Reuse/port the prior game's `DialogueManager`. Content is data:
                  { id:'group-hug', onTap:'+joy' } ],
   joyMeter:{ monotonic:true },       // only goes up
   realizationLine: DialogueSequence, // sincere, comedy suppressed
-  finalTableau:{ characters:['merlin','boys','anthony','cyndie'], motif:'home-resolved' },
+  finalTableau:{ characters:['merlin','boys','ila','chinook','hades'], motif:'home-resolved' },  // mentor cameo icons, not Anthony/Cyndie
   credits:{ text, optional:true }
 }
 ```

@@ -33,8 +33,8 @@ Merlin, the family dog, decides it's time to grow up and **get a job** like all 
 | **Ila** | Mentor — protection/discipline | Mostly-black black-and-tan working-line GSD, IGP-trained. Calm, exact, kind. |
 | **Chinook** | Mentor — scent/field | 6-month-old bloodhound, all nose and heart, still learning. |
 | **Hades** | Mentor — management | Very large African-breed-style house cat. Imperious, brilliant, in charge. |
-| **The Boys** | The heart | Anthony & Cyndie's kids — the ones Merlin is really working for. |
-| **Anthony & Cyndie** | The family | Appear at the edges; the home everyone belongs to. |
+| **The Boys** | The heart | Nick's three boys — Merlin's boys, the ones he's really working for. |
+| **Anthony & Cyndie** | Visiting family | Appear at the edges. Cyndie (who this game is *for*) loves cuddling Merlin when she visits; Hades is their cat. Merlin lives with Nick's family, not theirs. |
 
 ## 5. The seven stages at a glance
 

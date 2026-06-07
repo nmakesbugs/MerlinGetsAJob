@@ -148,3 +148,21 @@ test('loaded game content has no forbidden strings', async ({ page }) => {
     expect(content).not.toContain(word);
   }
 });
+
+// ═══════════════════════════════════════════════════════════
+// 1.0: the optional offline service worker registers cleanly (no console errors).
+// ═══════════════════════════════════════════════════════════
+test("service worker registers cleanly for offline PWA support", async ({ page }) => {
+  const errors = [];
+  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+  page.on('pageerror', e => errors.push(String(e)));
+
+  await page.goto('/');
+  const state = await page.evaluate(async () => {
+    if (!('serviceWorker' in navigator)) return 'unsupported';
+    const reg = await navigator.serviceWorker.ready;   // resolves once a worker is active
+    return reg && reg.active ? 'active' : 'no-active';
+  });
+  expect(state).toBe('active');
+  expect(errors, errors.join('\n')).toEqual([]);
+});
