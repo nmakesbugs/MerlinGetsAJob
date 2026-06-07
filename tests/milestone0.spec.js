@@ -81,25 +81,19 @@ test('global __merlinGame matches CONTENT_SCHEMA', async ({ page }) => {
   expect(shape.hasGoTo).toBe(true);
   expect(shape.hasScene).toBe(true);
   expect(shape.stageIds).toEqual(STAGE_IDS);
-  for (const k of ['currentStage', 'furthestStage', 'assistMode', 'aesthetic', 'choices', 'stars', 'joy', 'rngSeed', 'flags']) {
+  for (const k of ['currentStage', 'furthestStage', 'aesthetic', 'choices', 'stars', 'medals', 'joy', 'rngSeed', 'flags']) {
     expect(shape.stateKeys).toContain(k);
   }
 });
 
 // ═══════════════════════════════════════════════════════════
-// 6. Assist defaults to true and the toggle flips it.
+// 6. There is a single default mode — no Assist/Challenge toggle.
 // ═══════════════════════════════════════════════════════════
-test('assist mode defaults on and toggles', async ({ page }) => {
+test('there is no Assist/Challenge toggle (single default mode)', async ({ page }) => {
   await page.goto('/');
-  expect(await page.evaluate(() => window.__merlinGame.state.assistMode)).toBe(true);
-  await expect(page.locator('#assist-toggle')).toHaveText('Assist: ON');
-
-  await page.locator('#assist-toggle').click();
-  expect(await page.evaluate(() => window.__merlinGame.state.assistMode)).toBe(false);
-  await expect(page.locator('#assist-toggle')).toHaveText('Challenge');
-
-  await page.locator('#assist-toggle').click();
-  expect(await page.evaluate(() => window.__merlinGame.state.assistMode)).toBe(true);
+  await expect(page.locator('#assist-toggle')).toHaveCount(0);
+  expect(await page.evaluate(() => 'assistMode' in window.__merlinGame.state)).toBe(false);
+  expect(await page.evaluate(() => typeof window.__merlinGame.setAssist)).toBe('undefined');
 });
 
 // ═══════════════════════════════════════════════════════════

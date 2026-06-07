@@ -118,9 +118,8 @@ test('holding past Out gives a redo, not completion', async ({ page }) => {
 // ═══════════════════════════════════════════════════════════
 // 9, 10 & 11. Full Assist auto-play completes Stage 2 and reaches Stage 3 (no dead-end).
 // ═══════════════════════════════════════════════════════════
-test('Assist auto-play completes Stage 2 and hands off to Stage 3', async ({ page }) => {
+test('auto-play completes Stage 2 and hands off to Stage 3', async ({ page }) => {
   await enterStage2(page);
-  expect(await page.evaluate(() => window.__merlinGame.state.assistMode)).toBe(true);
 
   for (let i = 0; i < 40; i++) {
     if ((await stage(page)) === 'stage3-fight') break;
@@ -182,12 +181,10 @@ test('over-eager holding lowers the star score and skips the medal', async ({ pa
   expect(Boolean((await medalsOf(page))['perfect-out'])).toBe(false);
 });
 
-test('Challenge mode uses a longer obedience sequence', async ({ page }) => {
-  await page.goto('/');
-  await page.evaluate(() => { window.__merlinGame.setAssist(false); window.__merlinGame.goToStage('stage2-academy'); });
-  await page.waitForFunction(() => window.__merlinGame.state.currentStage === 'stage2-academy');
+test('single default obedience sequence (no Challenge mode)', async ({ page }) => {
+  await enterStage2(page);
   await drain(page);
   await page.evaluate(() => window.__merlinGame.debug.stage2AutoPlayDrill());  // tracking
   await drain(page);                                                          // → obedience
-  expect(await page.evaluate(() => window.__merlinGame.scene.obeySeq.length)).toBe(6);
+  expect(await page.evaluate(() => window.__merlinGame.scene.obeySeq.length)).toBe(4);
 });

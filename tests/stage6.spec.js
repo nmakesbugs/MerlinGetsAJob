@@ -120,9 +120,8 @@ test('Composure zero triggers a comedic reset, not a game-over', async ({ page }
 // ═══════════════════════════════════════════════════════════
 // 12, 14 & 15. Assist auto-play completes every round → Stage 7.
 // ═══════════════════════════════════════════════════════════
-test('Assist auto-play completes Stage 6 and hands off to Stage 7', async ({ page }) => {
+test('auto-play completes Stage 6 and hands off to Stage 7', async ({ page }) => {
   await enterStage6(page);
-  expect(await page.evaluate(() => window.__merlinGame.state.assistMode)).toBe(true);
   await page.evaluate(() => window.__merlinGame.debug.stage6AutoPlayStage());
 
   const f = await flags(page);
@@ -166,14 +165,6 @@ test('tapping junk lowers the star score', async ({ page }) => {
   expect(await starOf6(page, 'stage6-hades')).toBeLessThan(3);
 });
 
-test('Challenge mode renders subtler event cues', async ({ page }) => {
-  await page.goto('/');
-  await page.evaluate(() => { window.__merlinGame.setAssist(false); window.__merlinGame.goToStage('stage6-hades'); });
-  await page.waitForFunction(() => window.__merlinGame.state.currentStage === 'stage6-hades');
-  await drain(page);   // → round 1
-  await page.evaluate(() => window.__merlinGame.debug.stage6SpawnEvent('boys-need'));
-  expect(await page.locator('.s6-event.challenge').count()).toBeGreaterThan(0);
-});
 
 // ═══════════════════════════════════════════════════════════
 // 0.81 Polish — clarity: rules panel, event coding, Delegate feedback.

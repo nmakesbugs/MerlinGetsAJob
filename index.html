@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=0.81">
+<link rel="stylesheet" href="style.css?v=0.82">
 </head>
 <body data-accent="home" data-stage="title">
 
@@ -25,10 +25,9 @@
     <!-- DOM UI overlay layer (sits above canvas). -->
     <div id="ui-layer">
 
-      <!-- Persistent HUD: stage tag + Assist/Challenge toggle. -->
+      <!-- Persistent HUD: current stage label. -->
       <div id="hud">
         <span id="hud-stage">Title</span>
-        <button id="assist-toggle" type="button" aria-pressed="true">Assist: ON</button>
       </div>
 
       <!-- Shared result toast: end-of-stage stars + Merlin Medals. -->
@@ -149,6 +148,13 @@
           <div class="s5-meter"><span class="s5-meter-label">Tired</span><div class="s5-bar tired"><div id="s5-fatigue-fill"></div></div></div>
         </div>
         <div id="s5-cue" style="display:none"></div>
+        <!-- Center-screen gentle-flush timing widget -->
+        <div id="s5-timing" style="display:none">
+          <div id="s5-timing-track">
+            <div id="s5-timing-sweet"></div>
+            <div id="s5-timing-marker"></div>
+          </div>
+        </div>
         <div id="s5-banner" style="display:none"></div>
         <div id="s5-controls">
           <button id="s5-scent-btn" class="s5-btn" type="button">👃 Follow the scent</button>
@@ -209,6 +215,6 @@
   </div><!-- #game-frame -->
 </div><!-- #viewport -->
 
-<script src="game.js?v=0.81"></script>
+<script src="game.js?v=0.82"></script>
 </body>
 </html>

@@ -110,9 +110,8 @@ test('fatigue rises across finds', async ({ page }) => {
 // ═══════════════════════════════════════════════════════════
 // 10–13. Assist auto-play completes every find → Stage 6 (no dead-end).
 // ═══════════════════════════════════════════════════════════
-test('Assist auto-play completes Stage 5 and hands off to Stage 6', async ({ page }) => {
+test('auto-play completes Stage 5 and hands off to Stage 6', async ({ page }) => {
   await enterStage5(page);
-  expect(await page.evaluate(() => window.__merlinGame.state.assistMode)).toBe(true);
   await page.evaluate(() => window.__merlinGame.debug.stage5AutoPlayStage());
 
   const f = await flags(page);
@@ -159,11 +158,43 @@ test('a hold reset lowers stars and skips Steady Boy', async ({ page }) => {
   expect(Boolean((await medalsOf5(page))['steady-boy'])).toBe(false);
 });
 
-test('Challenge mode tires Merlin faster', async ({ page }) => {
-  await page.goto('/');
-  await page.evaluate(() => { window.__merlinGame.setAssist(false); window.__merlinGame.goToStage('stage5-birddog'); });
-  await page.waitForFunction(() => window.__merlinGame.state.currentStage === 'stage5-birddog');
-  await drain(page);
-  await page.evaluate(() => window.__merlinGame.debug.stage5AdvanceScent());
-  expect((await s5(page)).fatigue).toBe(4);   // Challenge +4/step (Assist is +2)
+// ═══════════════════════════════════════════════════════════
+// 0.82 — center-screen gentle-flush timing.
+// ═══════════════════════════════════════════════════════════
+async function toFlushTiming(page) {
+  await enterAndScent(page);
+  await toPoint(page);
+  await page.evaluate(() => window.__merlinGame.debug.stage5CompletePointHold());
+  await drain(page);                                   // deliver the cue → timing begins
+  await page.waitForFunction(() => { const s = window.__merlinGame.scene; return s && s.phase === 'flushTiming'; });
+}
+
+test('after the cue, the flush timing widget appears', async ({ page }) => {
+  await toFlushTiming(page);
+  const st = await s5(page);
+  expect(st.flushTimingActive).toBe(true);
+  expect(st.flushSweetEnd).toBeGreaterThan(st.flushSweetStart);
+  await expect(page.locator('#s5-timing')).toBeVisible();
+  await expect(page.locator('#s5-flush-btn')).toBeEnabled();
+});
+
+test('flushing in the sweet spot is a perfect gentle flush', async ({ page }) => {
+  await toFlushTiming(page);
+  await page.evaluate(() => { const s = window.__merlinGame.scene; window.__merlinGame.debug.stage5FlushAt((s.flushSweetStart + s.flushSweetEnd) / 2); });
+  const st = await s5(page);
+  expect(st.lastFlushQuality).toBe('perfect');
+  expect(st.lastFlush).toBe('fly-free');                 // bird flies free
+  expect(st.flushMistakes).toBe(0);
+  expect((await flags(page)).stage5Find1Complete).toBe(true);
+});
+
+test('flushing outside the sweet spot still sends the bird free (gentle, no fail)', async ({ page }) => {
+  await toFlushTiming(page);
+  await page.evaluate(() => window.__merlinGame.debug.stage5FlushAt(2));   // well before the sweet spot
+  const st = await s5(page);
+  expect(st.lastFlushQuality).toBe('gentle');
+  expect(st.lastFlush).toBe('fly-free');                 // still flies free
+  expect(st.flushMistakes).toBe(1);
+  expect((await flags(page)).stage5Find1Complete).toBe(true);
+  expect(await stage(page)).toBe('stage5-birddog');      // progresses, no dead-end
 });

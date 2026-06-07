@@ -16,7 +16,24 @@ See the design docs for the full vision: [`DESIGN_BIBLE.md`](DESIGN_BIBLE.md),
 
 ## Status
 
-### 0.81 — Gameplay Polish Patch ✅ (current)
+### 0.82 — Mechanics Simplification + Chinook Fun Patch ✅ (current)
+
+- **Removed Assist/Challenge entirely.** There is now **one warm, easy, lightly-skillful default
+  mode** — no HUD toggle, no `state.assistMode`, no difficulty menu. Stars and Merlin Medals
+  remain as optional feedback.
+- **Stage 4 / Chinook is more fun:** Chinook still points to the starting spot, but the target
+  now **moves after it appears** (duck drifts slowly, clay zips and is shorter-lived, decoys
+  flutter/drift, the Hades cameo is clearly "do not tap"). A primary you never tap **drifts away
+  harmlessly** ("It got away — Chinook points again!") and the round advances — never a fail.
+  Big Sniff **slows the chase** and highlights the field.
+- **Stage 5 / gentle flush timing:** after the handler's cue, a **center-screen timing bar**
+  sweeps a marker; tap inside the sweet spot for a *perfect gentle flush*, or anywhere else for
+  a *"close enough — the bird flies free!"* Either way the bird flies free; it's forgiving and
+  never repeats.
+- **Stages 6 & 7 preserved** from 0.81 (rules card, legend, visible Delegate; three boys,
+  sequential interactions).
+
+### 0.81 — Gameplay Polish Patch ✅
 
 Focused UX/clarity polish from playtest feedback (not the narrative pass):
 

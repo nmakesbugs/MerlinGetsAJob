@@ -129,9 +129,8 @@ test('Pep zero triggers a retry, not a game-over', async ({ page }) => {
 // ═══════════════════════════════════════════════════════════
 // 10, 12 & 13. Assist auto-play clears every opponent → Stage 4 (no dead-end).
 // ═══════════════════════════════════════════════════════════
-test('Assist auto-play clears all opponents and hands off to Stage 4', async ({ page }) => {
+test('auto-play clears all opponents and hands off to Stage 4', async ({ page }) => {
   await enterStage3(page);
-  expect(await page.evaluate(() => window.__merlinGame.state.assistMode)).toBe(true);
   await page.evaluate(() => window.__merlinGame.debug.stage3AutoPlayFight());
 
   const f = await flags(page);
@@ -180,12 +179,8 @@ test('mash-the-finisher auto-play earns fewer stars and no medal', async ({ page
   expect(Boolean((await medalsOf3(page))['teamwork-pro'])).toBe(false);
 });
 
-test('Challenge penalizes repeating the same assist', async ({ page }) => {
-  await page.goto('/');
-  await page.evaluate(() => { window.__merlinGame.setAssist(false); window.__merlinGame.goToStage('stage3-fight'); });
-  await page.waitForFunction(() => window.__merlinGame.state.currentStage === 'stage3-fight');
-  await drain(page);   // advance the intro so opponent 1 is fighting
-  await page.waitForFunction(() => { const s = window.__merlinGame.scene; return s && s.fighting; });
+test('repeating the same assist earns a little less (light skill, always on)', async ({ page }) => {
+  await enterAndFight(page);
   const gain1 = await page.evaluate(() => { const s = window.__merlinGame.scene; s.teamwork = 0; window.__merlinGame.debug.stage3UseAssist('boof'); return s.teamwork; });
   const gain2 = await page.evaluate(() => { const s = window.__merlinGame.scene; const b = s.teamwork; window.__merlinGame.debug.stage3UseAssist('boof'); return s.teamwork - b; });
   expect(gain2).toBeLessThan(gain1);   // repeating the same assist earns less

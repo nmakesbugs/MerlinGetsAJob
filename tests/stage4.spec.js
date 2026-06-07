@@ -149,12 +149,12 @@ test('Big Sniff fills and triggers a bonus', async ({ page }) => {
 test('target spawns are deterministic under rngSeed', async ({ page }) => {
   await enterAndStart(page, 123);
   await page.evaluate(() => window.__merlinGame.debug.stage4SpawnNextTarget());
-  const t1 = (await s4(page)).target;
+  const t1 = (await s4(page)).spawnAt;          // immutable spawn position (target then moves)
 
   await page.evaluate(() => { window.__merlinGame.goToStage('title'); window.__merlinGame.state.rngSeed = 123; window.__merlinGame.goToStage('stage4-sniff'); });
   await drain(page);
   await page.evaluate(() => window.__merlinGame.debug.stage4SpawnNextTarget());
-  const t2 = (await s4(page)).target;
+  const t2 = (await s4(page)).spawnAt;
 
   expect(t2).toEqual(t1);
 });
@@ -162,9 +162,8 @@ test('target spawns are deterministic under rngSeed', async ({ page }) => {
 // ═══════════════════════════════════════════════════════════
 // 11, 13, 14 & 15. Assist auto-play clears all waves → Stage 5 (no dead-end).
 // ═══════════════════════════════════════════════════════════
-test('Assist auto-play completes all waves and hands off to Stage 5', async ({ page }) => {
+test('auto-play completes all waves and hands off to Stage 5', async ({ page }) => {
   await enterStage4(page, 7);
-  expect(await page.evaluate(() => window.__merlinGame.state.assistMode)).toBe(true);
   await page.evaluate(() => window.__merlinGame.debug.stage4AutoPlayGallery());
 
   const f = await flags(page);
@@ -213,15 +212,6 @@ test('tapping decoys lowers stars and skips Nose First', async ({ page }) => {
   expect(Boolean((await medalsOf4(page))['nose-first'])).toBe(false);
 });
 
-test('Challenge mode uses smaller targets', async ({ page }) => {
-  await page.goto('/');
-  await page.evaluate(() => { window.__merlinGame.state.rngSeed = 7; window.__merlinGame.setAssist(false); window.__merlinGame.goToStage('stage4-sniff'); });
-  await page.waitForFunction(() => window.__merlinGame.state.currentStage === 'stage4-sniff');
-  await drain(page);
-  await page.evaluate(() => window.__merlinGame.debug.stage4SpawnNextTarget());
-  expect(await page.locator('.s4-target.primary.small').count()).toBeGreaterThan(0);
-});
-
 // ═══════════════════════════════════════════════════════════
 // 0.81 Polish — Chinook's point direction + Big Sniff highlight.
 // ═══════════════════════════════════════════════════════════
@@ -233,8 +223,8 @@ test('Chinook points at the spot, and the target appears there', async ({ page }
   expect(st.pointAt).not.toBeNull();                       // Chinook is already pointing
   await page.evaluate(() => window.__merlinGame.debug.stage4SpawnNextTarget());
   const after = await s4(page);
-  expect(after.target.x).toBe(st.pointAt.x);               // target appears where he pointed
-  expect(after.target.y).toBe(st.pointAt.y);
+  expect(after.spawnAt.x).toBe(st.pointAt.x);              // target appears where he pointed
+  expect(after.spawnAt.y).toBe(st.pointAt.y);
 });
 
 test('Big Sniff highlights the gallery field', async ({ page }) => {
@@ -243,4 +233,44 @@ test('Big Sniff highlights the gallery field', async ({ page }) => {
   await page.evaluate(() => window.__merlinGame.debug.stage4TriggerBigSniff());
   await page.evaluate(() => window.__merlinGame.debug.stage4TapTarget());   // → next round begins with Big Sniff active
   expect(await page.locator('#s4-field.bigsniff').count()).toBe(1);
+});
+
+// ═══════════════════════════════════════════════════════════
+// 0.82 — moving targets after the point + harmless timeout.
+// ═══════════════════════════════════════════════════════════
+test('the target moves after it spawns', async ({ page }) => {
+  await enterAndStart(page, 5);
+  await page.evaluate(() => window.__merlinGame.debug.stage4SpawnNextTarget());
+  expect((await s4(page)).targetMoving).toBe(true);
+  const x0 = (await s4(page)).target.x;
+  await page.evaluate(() => window.__merlinGame.debug.stage4AdvanceMotion(500));
+  const x1 = (await s4(page)).target.x;
+  expect(x1).not.toBe(x0);                                  // it drifted along
+});
+
+test('duck and clay drift at different speeds', async ({ page }) => {
+  await enterAndStart(page, 11);
+  const speeds = {};
+  for (let i = 0; i < 16 && Object.keys(speeds).length < 2; i++) {
+    if ((await stage(page)) !== 'stage4-sniff') break;
+    let st = await s4(page);
+    if (!st.target) { await page.evaluate(() => window.__merlinGame.debug.stage4SpawnNextTarget()); st = await s4(page); }
+    if (st.target) { speeds[st.target.kind] = Math.abs(st.targetVx); await page.evaluate(() => window.__merlinGame.debug.stage4TapTarget()); }
+    else { await drain(page); }
+  }
+  expect(speeds.duck).toBeGreaterThan(0);
+  expect(speeds.clay).toBeGreaterThan(0);
+  expect(speeds.clay).toBeGreaterThan(speeds.duck);        // clay is faster than the lazy duck
+});
+
+test('a target that times out drifts away and the round advances (no fail)', async ({ page }) => {
+  await enterAndStart(page, 5);
+  await page.evaluate(() => window.__merlinGame.debug.stage4SpawnNextTarget());
+  const before = (await s4(page)).targetTimedOut;
+  await page.evaluate(() => window.__merlinGame.debug.stage4ForceTimeout());
+  const after = await s4(page);
+  expect(after.targetTimedOut).toBe(before + 1);
+  expect(after.lastResolve.outcome).toBe('timeout');
+  expect(await stage(page)).toBe('stage4-sniff');          // never a dead-end
+  expect(Boolean((await flags(page)).stage4Complete)).toBe(false);
 });

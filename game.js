@@ -4,7 +4,7 @@
    Vanilla JS, no framework, no build step. Portrait 390x700.
    Provides: global game object, stage registry, scene lifecycle with
    tracked teardown, minimal DialogueManager, procedural WebAudio stubs,
-   seedable RNG, and an Assist/Challenge toggle.
+   seedable RNG, and a single warm default mode (no difficulty toggle).
    Real stage gameplay is intentionally NOT implemented here.
    ================================================================ */
 const GW = 390, GH = 700;
@@ -448,8 +448,6 @@ function drawAcademyField(ctx) {
 
 /* ── STAGE 2 — Ila's Working Dog Academy (three IGP-inspired drills) ── */
 const OBEY_SEQUENCE = ['sit', 'heel', 'down', 'stay'];
-const OBEY_SEQUENCE_CHALLENGE = ['sit', 'heel', 'down', 'stay', 'down', 'heel'];   // longer in Challenge
-const OBEY_BUTTONS_CHALLENGE = ['down', 'stay', 'sit', 'heel'];                    // shuffled layout
 const OBEY_LABELS = { sit: 'Sit', heel: 'Heel', down: 'Down', stay: 'Stay' };
 
 class Stage2Scene extends Scene {
@@ -462,7 +460,7 @@ class Stage2Scene extends Scene {
     this.awaitingInput = false; // true only when a drill expects a tap
     this.obeyIndex = 0;
     this.outCalled = false;
-    this.obeySeq = this._assist() ? OBEY_SEQUENCE : OBEY_SEQUENCE_CHALLENGE;
+    this.obeySeq = OBEY_SEQUENCE;
     this.trackWrong = 0;        // performance counters (for stars / medals)
     this.obeyWrong = 0;
     this.outPerfect = true;     // false once the player chooses "keep holding"
@@ -475,7 +473,6 @@ class Stage2Scene extends Scene {
     this._intro();
   }
 
-  _assist() { return this.game.state.assistMode; }
   _say(lines, onDone) { this.game.dialogue.show(lines, onDone); }
   _setProgress(label, frac) {
     document.getElementById('s2-progress-label').textContent = label;
@@ -554,8 +551,7 @@ class Stage2Scene extends Scene {
   _revealObey() {
     const wrap = document.getElementById('s2-obey-buttons');
     wrap.innerHTML = '';
-    const layout = this._assist() ? ['sit', 'heel', 'down', 'stay'] : OBEY_BUTTONS_CHALLENGE;
-    layout.forEach(cmd => {
+    ['sit', 'heel', 'down', 'stay'].forEach(cmd => {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 's2-cmd'; b.setAttribute('data-cmd', cmd);
       b.textContent = OBEY_LABELS[cmd];
@@ -802,7 +798,6 @@ class Stage3Scene extends Scene {
     this.game.dialogue.show(STAGE3_TEXT.intro, () => this._startOpponent(0));
   }
 
-  _assist() { return this.game.state.assistMode; }
   _updateMeters() {
     this.pepFill.style.width = Math.max(0, this.pep) + '%';
     this.teamFill.style.width = Math.min(100, this.teamwork) + '%';
@@ -822,7 +817,7 @@ class Stage3Scene extends Scene {
     this.fighting = true;
     this.fleeing = false;
     this.telegraph = 0;
-    this.attackTimer = this._assist() ? 5200 : 3600;
+    this.attackTimer = 5000;
     this.foeName.textContent = this.opp.name + '  ' + this.opp.prop;
     this.telegraphEl.style.display = 'none';
     this._showFinisher(false);
@@ -833,18 +828,16 @@ class Stage3Scene extends Scene {
   _useAssist(id, force) {
     if (!this.fighting || this.fleeing) return false;
     if (!force && this.cool[id] > 0) return false;
-    this.cool[id] = this._assist() ? 250 : 700;
+    this.cool[id] = 300;
     if (id === 'boof') SFX.boof(); else if (id === 'trip') SFX.bonk(); else SFX.tap();
     this.assistsUsed.add(id);
     let gain = ASSIST_GAIN[id];
     // Interrupting the opponent's wind-up is the best timing.
     if (this.telegraph > 0) { this.telegraph = 0; this.telegraphEl.style.display = 'none'; gain += 12; this.interrupts++; SFX.star(); }
-    if (!this._assist()) {
-      // Challenge: the right tool earns more; spamming the same assist earns less.
-      if (this.opp && id === this.opp.prefer) gain += 8;
-      if (id === this.lastAssist) { this.repeatStreak++; gain = Math.max(8, gain - Math.min(this.repeatStreak * 6, 20)); }
-      else this.repeatStreak = 0;
-    }
+    // Light skill (always on): the right tool earns more; spamming the same assist earns a little less.
+    if (this.opp && id === this.opp.prefer) gain += 8;
+    if (id === this.lastAssist) { this.repeatStreak++; gain = Math.max(8, gain - Math.min(this.repeatStreak * 6, 20)); }
+    else this.repeatStreak = 0;
     this.lastAssist = id;
     this.teamwork = Math.min(100, this.teamwork + gain);
     this._updateMeters();
@@ -882,7 +875,7 @@ class Stage3Scene extends Scene {
   _attackLands() {
     this.telegraph = 0;
     this.telegraphEl.style.display = 'none';
-    this.pep = Math.max(0, this.pep - (this._assist() ? 12 : 22));
+    this.pep = Math.max(0, this.pep - 12);
     SFX.bonk();
     this._updateMeters();
     if (this.pep <= 0) this._pepOut();
@@ -923,9 +916,9 @@ class Stage3Scene extends Scene {
     } else {
       this.attackTimer -= dt;
       if (this.attackTimer <= 0) {
-        this.telegraph = this._assist() ? 1800 : 1000;
+        this.telegraph = 1800;
         this.telegraphEl.style.display = 'block';
-        this.attackTimer = this._assist() ? 5200 : 3600;
+        this.attackTimer = 5000;
       }
     }
   }
@@ -1008,6 +1001,7 @@ const STAGE4_TEXT = {
     { speaker: 'Merlin', text: 'I respect you deeply and will now stop questioning puppies.' },
   ],
   bigSniff: 'BIG SNIFF! 🐽',
+  lostIt: 'It got away — Chinook points again! 👃',
   scold: {
     butterfly: "That's a butterfly, not a find!",
     hat: "That's the neighbor's hat!",
@@ -1074,6 +1068,8 @@ class Stage4Scene extends Scene {
     this.decoyTaps = 0;             // performance: discrimination + combo
     this.hits = 0;
     this.maxCombo = 0;
+    this.targetTimedOut = 0;
+    this.pending = null;
     this.canvas = document.getElementById('game-canvas');
     this.ctx = this.canvas.getContext('2d');
     this.layer = document.getElementById('stage4-layer');
@@ -1086,8 +1082,18 @@ class Stage4Scene extends Scene {
     this.game.dialogue.show(STAGE4_TEXT.intro, () => { this.wave = 1; this.roundInWave = 0; this._beginRound(); });
   }
 
-  _assist() { return this.game.state.assistMode; }
   _waveRounds() { return S4_WAVE_ROUNDS[this.wave - 1]; }
+  // Per-kind motion (% of field per second) + lifetime; deterministic given the rolled dir.
+  _kindMotion(kind, dir) {
+    switch (kind) {
+      case 'duck': return { vx: dir * 6, vy: 0, life: 6500 };       // slow horizontal drift
+      case 'clay': return { vx: dir * 12, vy: -3, life: 3800 };     // faster, shorter-lived
+      case 'butterfly': return { vx: dir * 4, vy: 3, life: 5200 };  // slow flutter
+      case 'hat': return { vx: dir * 2, vy: 0, life: 5200 };        // mostly still
+      case 'hades': return { vx: dir * 1, vy: 0, life: 6500 };      // imperious sunbathing drift
+      default: return { vx: dir * 5, vy: 0, life: 5000 };
+    }
+  }
   _updateHud() {
     document.getElementById('s4-wave').textContent = 'Wave ' + this.wave;
     document.getElementById('s4-score').textContent = 'Score ' + this.score;
@@ -1113,7 +1119,7 @@ class Stage4Scene extends Scene {
     if (this.field) this.field.classList.toggle('bigsniff', this.bigSniffActive);
     SFX.sniff();
     // Big Sniff gives a longer, clearer point (feels rewarding).
-    const delay = this.bigSniffActive ? (this._assist() ? 1500 : 1100) : (this._assist() ? 1100 : 600);
+    const delay = this.bigSniffActive ? 1500 : 1100;
     this.bind.timeout(() => this._spawnRound(), delay);
   }
 
@@ -1123,16 +1129,16 @@ class Stage4Scene extends Scene {
     this.telegraphEl.style.display = 'none';
     const r = this.rng;
     const p = this.pending || { kind: r() < 0.5 ? 'duck' : 'clay', x: Math.round(12 + r() * 64), y: Math.round(16 + r() * 30) };
-    this.target = { kind: p.kind, x: p.x, y: p.y, el: null };
+    const tdir = r() < 0.5 ? 1 : -1;
+    this.target = Object.assign({ kind: p.kind, x: p.x, y: p.y, spawnX: p.x, spawnY: p.y, el: null }, this._kindMotion(p.kind, tdir));
     this.pending = null;
     this._addEl(this.target, true);
-    // Challenge: decoys from the first wave and more often; Assist: gentler.
-    const decoyFrom = this._assist() ? 2 : 1;
-    const decoyChance = this._assist() ? 0.5 : 0.62;
-    if (this.wave >= decoyFrom && r() < decoyChance) {
+    // A playful decoy from wave 2 onward (deterministic).
+    if (this.wave >= 2 && r() < 0.5) {
       const dkind = ['butterfly', 'hat', 'hades'][Math.floor(r() * 3)];
       const dx = Math.round(12 + r() * 64), dy = Math.round(16 + r() * 30);
-      this.decoy = { kind: dkind, x: dx, y: dy, el: null };
+      const ddir = r() < 0.5 ? 1 : -1;
+      this.decoy = Object.assign({ kind: dkind, x: dx, y: dy, el: null }, this._kindMotion(dkind, ddir));
       this._addEl(this.decoy, false);
     }
   }
@@ -1140,7 +1146,7 @@ class Stage4Scene extends Scene {
   _addEl(t, primary) {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 's4-target s4-kind-' + t.kind + (primary ? ' primary' : ' decoy') + (this._assist() ? '' : ' small');
+    b.className = 's4-target s4-kind-' + t.kind + (primary ? ' primary' : ' decoy');
     b.setAttribute('data-kind', t.kind);
     b.setAttribute('data-role', primary ? 'primary' : 'decoy');
     if (t.kind === 'hades') b.setAttribute('aria-label', 'Hades — do not tap');
@@ -1160,6 +1166,41 @@ class Stage4Scene extends Scene {
   }
   _clearDecoy() { if (this.decoy) { this._removeEl(this.decoy, 'gone'); this.decoy = null; } }
 
+  // Deterministic motion: move active target/decoy, bounce inside the sky field.
+  _moveTargets(dt) {
+    if (dt <= 0) return;
+    const step = dt / 1000 * (this.bigSniffActive ? 0.55 : 1);   // Big Sniff slows the chase
+    [this.target, this.decoy].forEach(o => {
+      if (!o) return;
+      o.x += (o.vx || 0) * step;
+      o.y += (o.vy || 0) * step;
+      if (o.x < 8) { o.x = 8; o.vx = Math.abs(o.vx); } else if (o.x > 90) { o.x = 90; o.vx = -Math.abs(o.vx); }
+      if (o.y < 12) { o.y = 12; o.vy = Math.abs(o.vy); } else if (o.y > 46) { o.y = 46; o.vy = -Math.abs(o.vy); }
+      if (o.el) { o.el.style.left = o.x + '%'; o.el.style.top = o.y + '%'; }
+    });
+  }
+
+  _advanceRound() {
+    this.roundInWave += 1;
+    if (this.roundInWave >= this._waveRounds()) this._endWave();
+    else this._beginRound();
+  }
+
+  // A moving primary that's never tapped drifts away — harmless, never a fail.
+  _timeoutTarget() {
+    if (!this.target) return;
+    this.combo = 0;
+    this.targetTimedOut += 1;
+    this.lastResolve = { kind: this.target.kind, outcome: 'timeout' };
+    this._removeEl(this.target, 'flyoff');
+    this.target = null;
+    this._clearDecoy();
+    SFX.sniff();
+    this._banner(STAGE4_TEXT.lostIt, 900);
+    this._updateHud();
+    this._advanceRound();
+  }
+
   _resolveTarget(kind) {
     if (!this.target) return false;
     const bonus = this.bigSniffActive;
@@ -1178,9 +1219,7 @@ class Stage4Scene extends Scene {
     }
     if (this.bigSniffActive && --this.bigSniffBonusLeft <= 0) this.bigSniffActive = false;
     this._updateHud();
-    this.roundInWave += 1;
-    if (this.roundInWave >= this._waveRounds()) this._endWave();
-    else this._beginRound();
+    this._advanceRound();
     return true;
   }
 
@@ -1218,14 +1257,19 @@ class Stage4Scene extends Scene {
   _outro() {
     this.game.state.flags.stage4Complete = true;
     let stars = 1;
-    if (this.decoyTaps === 0 && this.maxCombo >= 5) stars = 3;
-    else if (this.decoyTaps <= 2) stars = 2;
+    if (this.decoyTaps === 0 && this.targetTimedOut === 0 && this.maxCombo >= 5) stars = 3;
+    else if (this.decoyTaps <= 2 && this.targetTimedOut <= 2) stars = 2;
     const medals = this.decoyTaps === 0 ? [{ id: 'nose-first', label: 'Nose First' }] : [];
     this.game.stageResult('stage4-sniff', stars, medals);
     this.game.dialogue.show(STAGE4_TEXT.outro, () => this.game.goToStage('stage5-birddog'));
   }
 
-  update(dt) { this.t += dt; }
+  update(dt) {
+    this.t += dt;
+    this._moveTargets(dt);
+    if (this.target && this.target.life != null) { this.target.life -= dt; if (this.target.life <= 0) this._timeoutTarget(); }
+    if (this.decoy && this.decoy.life != null) { this.decoy.life -= dt; if (this.decoy.life <= 0) { this._removeEl(this.decoy, 'flyoff'); this.decoy = null; } }
+  }
 
   render() {
     if (!this.ctx) return;
@@ -1267,6 +1311,11 @@ class Stage4Scene extends Scene {
       telegraphing: this.telegraphing,
       pointAt: this.pointAt ? { x: this.pointAt.x, y: this.pointAt.y } : null,
       target: this.target ? { kind: this.target.kind, x: this.target.x, y: this.target.y } : null,
+      spawnAt: this.target ? { x: this.target.spawnX, y: this.target.spawnY } : null,
+      targetVx: this.target ? this.target.vx : null,
+      targetVy: this.target ? this.target.vy : null,
+      targetMoving: !!(this.target && (this.target.vx || this.target.vy)),
+      targetTimedOut: this.targetTimedOut,
       decoy: this.decoy ? { kind: this.decoy.kind } : null,
       lastResolve: this.lastResolve,
       decoyTaps: this.decoyTaps, hits: this.hits, maxCombo: this.maxCombo,
@@ -1275,8 +1324,10 @@ class Stage4Scene extends Scene {
   spawnNext() { if (this.telegraphing && !this.target) { this._spawnRound(); return true; } return false; }
   tapTarget() { return this.target ? this._resolveTarget(this.target.kind) : false; }
   tapDecoy() { return this.decoy ? this._resolveDecoy(this.decoy) : false; }
+  advanceMotion(ms) { this._moveTargets(ms || 0); return this.target ? { x: this.target.x, y: this.target.y } : null; }
+  forceTimeout() { if (this.target) { this._timeoutTarget(); return true; } return false; }
   forceBigSniff() { if (!this.bigSniffTriggered) { this.bigSniff = 100; this._triggerBigSniff(); this._updateHud(); return true; } return false; }
-  forceDecoy(kind) { if (!this.decoy) { this.decoy = { kind: kind || 'butterfly', x: 50, y: 24, el: null }; this._addEl(this.decoy, false); return true; } return false; }
+  forceDecoy(kind) { if (!this.decoy) { this.decoy = Object.assign({ kind: kind || 'butterfly', x: 50, y: 24, el: null }, this._kindMotion(kind || 'butterfly', 1)); this._addEl(this.decoy, false); return true; } return false; }
   autoPlay() {
     let guard = 0;
     while (this.game.state.currentStage === 'stage4-sniff' && guard++ < 80) {
@@ -1349,7 +1400,7 @@ class Stage5Scene extends Scene {
     this.game.state.flags.stage5Started = true;
     this.t = 0;
     this.findIndex = 0;
-    this.phase = 'intro';     // intro|scent|point|cue|flushed|outro
+    this.phase = 'intro';     // intro|scent|point|cue|flushTiming|flushed|outro
     this.scentStep = 0;
     this.holdMeter = 0;
     this.holding = false;
@@ -1357,6 +1408,12 @@ class Stage5Scene extends Scene {
     this.fatigue = 0;
     this.lastFlush = null;
     this.holdResets = 0;            // performance: steadiness (early releases) + fatigue
+    this.flushMistakes = 0;
+    this.flushMarker = 0;
+    this.flushDir = 1;
+    this.flushSweetStart = 35;
+    this.flushSweetEnd = 65;
+    this.lastFlushQuality = null;
     this.canvas = document.getElementById('game-canvas');
     this.ctx = this.canvas.getContext('2d');
     this.layer = document.getElementById('stage5-layer');
@@ -1365,21 +1422,24 @@ class Stage5Scene extends Scene {
     this.scentBtn = document.getElementById('s5-scent-btn');
     this.holdBtn = document.getElementById('s5-hold-btn');
     this.flushBtn = document.getElementById('s5-flush-btn');
+    this.timingEl = document.getElementById('s5-timing');
+    this.timingSweetEl = document.getElementById('s5-timing-sweet');
+    this.timingMarkerEl = document.getElementById('s5-timing-marker');
     this.layer.style.display = 'block';
     this.bind.on(this.scentBtn, 'click', () => this._advanceScent());
     this.bind.on(this.holdBtn, 'pointerdown', (e) => { e.preventDefault(); this.holding = true; });
     this.bind.on(this.holdBtn, 'pointerup', () => this._holdRelease());
     this.bind.on(this.holdBtn, 'pointerleave', () => this._holdRelease());
-    this.bind.on(this.flushBtn, 'click', () => this._flush());
+    this.bind.on(this.flushBtn, 'click', () => this._doFlush());
+    if (this.timingEl) this.bind.on(this.timingEl, 'click', () => this._doFlush());   // tap widget too
     SFX.motif('chinook');
     this._updateHud();
     this.game.dialogue.show(STAGE5_TEXT.intro, () => this._startFind(0));
   }
 
-  _assist() { return this.game.state.assistMode; }
   _scentTotal() { return S5_FIND_STEPS[this.findIndex]; }
   _scentStrength() { return Math.round((this.scentStep / this._scentTotal()) * 100); }
-  _holdMs() { return this._assist() ? 1200 : 2200; }
+  _holdMs() { return 1400; }
 
   _updateHud() {
     document.getElementById('s5-find').textContent = 'Find ' + (this.findIndex + 1) + ' of ' + S5_FINDS;
@@ -1393,8 +1453,10 @@ class Stage5Scene extends Scene {
     this.phase = p;
     this.scentBtn.style.display = p === 'scent' ? 'block' : 'none';
     this.holdBtn.style.display = p === 'point' ? 'block' : 'none';
-    this.flushBtn.style.display = p === 'cue' ? 'block' : 'none';
-    if (p !== 'cue') { this.cueEl.style.display = 'none'; this.flushBtn.disabled = true; this.flushBtn.classList.remove('ready'); }
+    this.flushBtn.style.display = p === 'flushTiming' ? 'block' : 'none';
+    if (this.timingEl) this.timingEl.style.display = p === 'flushTiming' ? 'flex' : 'none';
+    if (p !== 'cue' && p !== 'flushTiming') this.cueEl.style.display = 'none';
+    if (p !== 'flushTiming') { this.flushBtn.disabled = true; this.flushBtn.classList.remove('ready'); }
   }
 
   _startFind(i) {
@@ -1410,7 +1472,7 @@ class Stage5Scene extends Scene {
   _advanceScent() {
     if (this.phase !== 'scent') return false;
     this.scentStep += 1;
-    this.fatigue = Math.min(100, this.fatigue + (this._assist() ? 2 : 4));   // Challenge tires faster
+    this.fatigue = Math.min(100, this.fatigue + 2);
     SFX.sniff();
     this._updateHud();
     if (this.scentStep >= this._scentTotal()) this._beginPoint();
@@ -1428,7 +1490,6 @@ class Stage5Scene extends Scene {
       this.holding = false;
       this.holdMeter = 0;            // gentle reset — restraint is hard, but never a fail
       this.holdResets += 1;
-      if (!this._assist()) this.fatigue = Math.min(100, this.fatigue + 4);
       this._updateHud();
     }
     this.holding = false;
@@ -1442,23 +1503,36 @@ class Stage5Scene extends Scene {
     this._setPhase('cue');
     this.cueEl.textContent = STAGE5_TEXT.cue[0].text;
     this.cueEl.style.display = 'block';
-    this.flushBtn.disabled = true;
-    this.game.dialogue.show(STAGE5_TEXT.cue, () => {
-      this.cueReady = true;
-      this.cueEl.textContent = 'now — flush gently!';
-      this.flushBtn.disabled = false;
-      this.flushBtn.classList.add('ready');
-    });
+    // Handler cue dialogue first; only then does the gentle-flush timing begin.
+    this.game.dialogue.show(STAGE5_TEXT.cue, () => this._beginFlushTiming());
   }
 
-  _flush() {
-    if (this.phase !== 'cue' || !this.cueReady) return false;
-    this.lastFlush = 'fly-free';
+  // Center-screen timing: a marker sweeps; tap inside the sweet spot for a perfect flush.
+  _beginFlushTiming() {
+    this.cueReady = true;
+    this.flushMarker = 0;
+    this.flushDir = 1;
+    this._setPhase('flushTiming');
+    this.cueEl.textContent = 'Tap when the marker hits the sweet spot!';
+    this.cueEl.style.display = 'block';
+    if (this.timingSweetEl) { this.timingSweetEl.style.left = this.flushSweetStart + '%'; this.timingSweetEl.style.width = (this.flushSweetEnd - this.flushSweetStart) + '%'; }
+    this.flushBtn.disabled = false;
+    this.flushBtn.classList.add('ready');
+  }
+
+  _flushPerfect() { this.flushMarker = (this.flushSweetStart + this.flushSweetEnd) / 2; return this._doFlush(); }
+
+  _doFlush() {
+    if (this.phase !== 'flushTiming') return false;       // locked until the cue + timing
+    const inSweet = this.flushMarker >= this.flushSweetStart && this.flushMarker <= this.flushSweetEnd;
+    this.lastFlushQuality = inSweet ? 'perfect' : 'gentle';
+    if (!inSweet) this.flushMistakes += 1;
+    this.lastFlush = 'fly-free';                            // the bird ALWAYS flies free
     this.game.state.flags['stage5Find' + (this.findIndex + 1) + 'Complete'] = true;
     this.fatigue = Math.min(100, this.fatigue + 12);
     SFX.poof(); SFX.cheer();
     this._setPhase('flushed');
-    this._banner(STAGE5_TEXT.flushBanner, 1100);
+    this._banner(inSweet ? 'Perfect gentle flush! 🕊️' : 'Close enough — the bird flies free! 🕊️', 1100);
     this._updateHud();
     if (this.findIndex + 1 < S5_FINDS) this._startFind(this.findIndex + 1);
     else this._outro();
@@ -1469,9 +1543,9 @@ class Stage5Scene extends Scene {
     this._setPhase('outro');
     this.game.state.flags.stage5Complete = true;
     let stars = 1;
-    if (this.holdResets === 0 && this.fatigue < 90) stars = 3;
-    else if (this.holdResets <= 1) stars = 2;
-    const medals = this.holdResets === 0 ? [{ id: 'steady-boy', label: 'Steady Boy' }] : [];
+    if (this.holdResets === 0 && this.flushMistakes === 0 && this.fatigue < 90) stars = 3;
+    else if (this.holdResets <= 1 && this.flushMistakes <= 1) stars = 2;
+    const medals = (this.holdResets === 0 && this.flushMistakes === 0) ? [{ id: 'steady-boy', label: 'Steady Boy' }] : [];
     this.game.stageResult('stage5-birddog', stars, medals);
     SFX.sigh();
     this.game.dialogue.show(STAGE5_TEXT.outro, () => this.game.goToStage('stage6-hades'));
@@ -1483,6 +1557,12 @@ class Stage5Scene extends Scene {
       this.holdMeter = Math.min(100, this.holdMeter + (dt / this._holdMs()) * 100);
       this._updateHud();
       if (this.holdMeter >= 100) this._pointComplete();
+    }
+    if (this.phase === 'flushTiming') {
+      this.flushMarker += this.flushDir * (dt / 1400) * 100;     // gentle sweep, ~1.4s each way
+      if (this.flushMarker >= 100) { this.flushMarker = 100; this.flushDir = -1; }
+      else if (this.flushMarker <= 0) { this.flushMarker = 0; this.flushDir = 1; }
+      if (this.timingMarkerEl) this.timingMarkerEl.style.left = this.flushMarker + '%';
     }
   }
 
@@ -1512,21 +1592,30 @@ class Stage5Scene extends Scene {
       cueReady: this.cueReady,
       fatigue: this.fatigue,
       lastFlush: this.lastFlush,
-      flushAvailable: this.phase === 'cue' && this.cueReady,
+      flushAvailable: this.phase === 'flushTiming',
+      flushTimingActive: this.phase === 'flushTiming',
+      flushMarker: this.flushMarker,
+      flushSweetStart: this.flushSweetStart,
+      flushSweetEnd: this.flushSweetEnd,
+      flushMistakes: this.flushMistakes,
+      lastFlushQuality: this.lastFlushQuality,
       holdResets: this.holdResets,
     };
   }
   advanceScent() { return this._advanceScent(); }
   completePointHold() { if (this.phase === 'point') { this._pointComplete(); return true; } return false; }
   forceHoldReset() { if (this.phase === 'point') { this.holding = true; this.holdMeter = 20; this._holdRelease(); return true; } return false; }
-  flushOnCue() { return this._flush(); }
+  setFlushMarker(v) { this.flushMarker = Math.max(0, Math.min(100, v)); return this.flushMarker; }
+  flushAt(v) { this.setFlushMarker(v); return this._doFlush(); }     // deterministic timed flush
+  flushOnCue() { return this.phase === 'flushTiming' ? this._flushPerfect() : false; }
+  _autoFlushIfReady() { if (this.phase === 'flushTiming') { this._flushPerfect(); return true; } return false; }
   autoPlayFind() {
     const start = this.findIndex; let guard = 0;
     while (this.findIndex === start && this.game.state.currentStage === 'stage5-birddog' && guard++ < 50) {
       if (this.game.dialogue.box.style.display !== 'none') { this.game.dialogue.advance(); continue; }
       if (this.phase === 'scent') { this._advanceScent(); continue; }
       if (this.phase === 'point') { this._pointComplete(); continue; }
-      if (this.phase === 'cue' && this.cueReady) { this._flush(); continue; }
+      if (this.phase === 'flushTiming') { this._flushPerfect(); continue; }
       break;
     }
     return this.fatigue;
@@ -1537,7 +1626,7 @@ class Stage5Scene extends Scene {
       if (this.game.dialogue.box.style.display !== 'none') { this.game.dialogue.advance(); continue; }
       if (this.phase === 'scent') { this._advanceScent(); continue; }
       if (this.phase === 'point') { this._pointComplete(); continue; }
-      if (this.phase === 'cue' && this.cueReady) { this._flush(); continue; }
+      if (this.phase === 'flushTiming') { this._flushPerfect(); continue; }
       break;
     }
     return this.game.state.currentStage;
@@ -1546,6 +1635,7 @@ class Stage5Scene extends Scene {
   exit() {
     this.layer.style.display = 'none';
     this.cueEl.style.display = 'none';
+    if (this.timingEl) this.timingEl.style.display = 'none';
     this.banner.style.display = 'none';
     if (this.ctx) this.ctx.clearRect(0, 0, GW, GH);
     this.game.dialogue.hide();
@@ -1670,7 +1760,7 @@ class Stage6Scene extends Scene {
     this.composure = 100;
     this.happiness = 0;
     this.happinessGoal = 120;
-    this.delegatesLeft = this._assist() ? 3 : 2;
+    this.delegatesLeft = 3;
     this.junkTaps = 0;             // performance: restraint
     this.composureResets = 0;
     this.delegatesUsed = 0;
@@ -1697,9 +1787,8 @@ class Stage6Scene extends Scene {
     this.game.dialogue.show(STAGE6_TEXT.intro, () => this._demo());
   }
 
-  _assist() { return this.game.state.assistMode; }
   _spawnInterval() { return [1700, 1400, 1100][Math.max(0, this.round - 1)] || 1500; }
-  _junkLife() { return this._assist() ? 2800 : 2000; }
+  _junkLife() { return 2800; }
 
   _updateHud() {
     document.getElementById('s6-comp-fill').style.width = Math.max(0, Math.min(100, this.composure)) + '%';
@@ -1755,7 +1844,7 @@ class Stage6Scene extends Scene {
     const b = document.createElement('button');
     b.type = 'button';
     const delegable = (ev.pri === 'high' || ev.pri === 'med');
-    b.className = 's6-event pri-' + ev.pri + (delegable ? ' can-delegate' : '') + (this._assist() ? '' : ' challenge');  // Challenge: subtler cues
+    b.className = 's6-event pri-' + ev.pri + (delegable ? ' can-delegate' : '');  // single clear default cueing
     b.setAttribute('data-type', ev.type);
     b.setAttribute('data-pri', ev.pri);
     b.setAttribute('data-delegable', delegable ? '1' : '0');
@@ -1772,7 +1861,7 @@ class Stage6Scene extends Scene {
     if (this.active.indexOf(ev) < 0) return false;
     if (ev.pri === 'high') { this.happiness += 20; SFX.cheer(); }
     else if (ev.pri === 'med') { this.happiness += 10; SFX.tap(); }
-    else if (ev.pri === 'low') { this.composure -= (this._assist() ? 18 : 24); this.junkTaps++; this.junkTapsThisRound++; SFX.boof(); SFX.sigh(); this._banner(STAGE6_TEXT.junkTap, 950); }  // reacted to junk
+    else if (ev.pri === 'low') { this.composure -= 18; this.junkTaps++; this.junkTapsThisRound++; SFX.boof(); SFX.sigh(); this._banner(STAGE6_TEXT.junkTap, 950); }  // reacted to junk
     else if (ev.pri === 'rest') { this.composure = Math.min(100, this.composure + 22); SFX.purr(); this._banner(STAGE6_TEXT.rest, 900); }  // strategic rest
     this.composure = Math.max(0, Math.min(100, this.composure));
     this._removeEl(ev);
@@ -2208,7 +2297,6 @@ const game = {
   state: {
     currentStage: 'title',
     furthestStage: 'stage1-career-crisis',
-    assistMode: true,
     aesthetic: 'home',
     choices: {},
     stars: {},
@@ -2262,16 +2350,6 @@ const game = {
     el.textContent = text; el.style.display = 'block';
     if (this._toastTimer) clearTimeout(this._toastTimer);
     this._toastTimer = setTimeout(() => { el.style.display = 'none'; }, ms || 1800);
-  },
-
-  setAssist(on) {
-    this.state.assistMode = !!on;
-    const btn = document.getElementById('assist-toggle');
-    if (btn) {
-      btn.textContent = on ? 'Assist: ON' : 'Challenge';
-      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-    }
-    try { localStorage.setItem('merlin.assist', on ? '1' : '0'); } catch (e) {}
   },
 
   _recordFurthest(id) {
@@ -2331,6 +2409,8 @@ const game = {
     stage4TapDecoy() { return game.scene && game.scene.tapDecoy ? game.scene.tapDecoy() : false; },
     stage4TriggerBigSniff() { return game.scene && game.scene.forceBigSniff ? game.scene.forceBigSniff() : false; },
     stage4ForceDecoy(kind) { return game.scene && game.scene.forceDecoy ? game.scene.forceDecoy(kind) : false; },
+    stage4AdvanceMotion(ms) { return game.scene && game.scene.advanceMotion ? game.scene.advanceMotion(ms) : null; },
+    stage4ForceTimeout() { return game.scene && game.scene.forceTimeout ? game.scene.forceTimeout() : false; },
     stage4AutoPlayGallery() { return game.scene && game.scene.autoPlay ? game.scene.autoPlay() : null; },
     // All Stage 4 player-facing strings (for the family-safety guardrail scan).
     stage4AllText() {
@@ -2347,6 +2427,8 @@ const game = {
     stage5CompletePointHold() { return game.scene && game.scene.completePointHold ? game.scene.completePointHold() : false; },
     stage5ForceHoldReset() { return game.scene && game.scene.forceHoldReset ? game.scene.forceHoldReset() : false; },
     stage5FlushOnCue() { return game.scene && game.scene.flushOnCue ? game.scene.flushOnCue() : false; },
+    stage5SetFlushMarker(v) { return game.scene && game.scene.setFlushMarker ? game.scene.setFlushMarker(v) : null; },
+    stage5FlushAt(v) { return game.scene && game.scene.flushAt ? game.scene.flushAt(v) : false; },
     stage5AutoPlayFind() { return game.scene && game.scene.autoPlayFind ? game.scene.autoPlayFind() : null; },
     stage5AutoPlayStage() { return game.scene && game.scene.autoPlayStage ? game.scene.autoPlayStage() : null; },
     // All Stage 5 player-facing strings (for the family-safety guardrail scan).
@@ -2411,14 +2493,6 @@ function loop(t) {
 /* ── Boot ── */
 function boot() {
   game.dialogue = new DialogueManager();
-
-  // Restore Assist preference (defaults to ON / Assist).
-  let assist = true;
-  try { const v = localStorage.getItem('merlin.assist'); if (v === '0') assist = false; } catch (e) {}
-  game.setAssist(assist);
-
-  const toggle = document.getElementById('assist-toggle');
-  toggle.addEventListener('click', () => { SFX.tap(); game.setAssist(!game.state.assistMode); });
 
   // First user gesture unlocks audio (browser autoplay policy).
   const unlock = () => { SFX.init(); SFX.resume(); window.removeEventListener('pointerdown', unlock); };
