@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=0.6">
+<link rel="stylesheet" href="style.css?v=0.7">
 </head>
 <body data-accent="home" data-stage="title">
 
@@ -166,6 +166,27 @@
         <div id="s6-controls"><button id="s6-delegate" class="s6-btn" type="button">🤝 Delegate (3)</button></div>
       </div>
 
+      <!-- Stage 7 interactive layer (the emotional finale). -->
+      <div id="stage7-layer" style="display:none">
+        <div id="s7-joy"><span class="s7-joy-label">Joy</span><div class="s7-bar"><div id="s7-joy-fill"></div></div></div>
+        <div id="s7-callbacks" style="display:none">
+          <span class="s7-cb" data-cb="ila">🪑 Stay</span>
+          <span class="s7-cb" data-cb="chinook">👃 Nose</span>
+          <span class="s7-cb" data-cb="hades">😌 Composure</span>
+        </div>
+        <div id="s7-prompt"></div>
+        <div id="s7-interactions" style="display:none"></div>
+        <div id="s7-tableau" style="display:none">
+          <div class="s7-tab-title">Merlin’s real job 🧡</div>
+          <div class="s7-tab-mentors">🐕‍🦺 🐶 😼</div>
+        </div>
+        <div id="s7-end" style="display:none">
+          <h2 class="s7-end-title">The End</h2>
+          <p class="s7-end-sub">Merlin’s job: making the boys happy. 🧡</p>
+          <button id="s7-replay" class="big-btn" type="button">↺ Play Again</button>
+        </div>
+      </div>
+
       <!-- Shared dialogue box (used from Stage 1 onward). -->
       <div id="dialogue-box" style="display:none">
         <div class="dlg-speaker" id="dlg-speaker"></div>
@@ -177,6 +198,6 @@
   </div><!-- #game-frame -->
 </div><!-- #viewport -->
 
-<script src="game.js?v=0.6"></script>
+<script src="game.js?v=0.7"></script>
 </body>
 </html>

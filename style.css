@@ -482,6 +482,58 @@ body[data-accent="hades"]   { --accent: #8a5fc0; --accent-deep: #4a2f80; }
 .s6-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #2f1d57; }
 .s6-btn:disabled { opacity: .45; box-shadow: 0 2px 0 #2f1d57; cursor: default; }
 
+/* ================================================================
+   STAGE 7 — Merlin's Real Job (emotional finale)
+   ================================================================ */
+#stage7-layer { position: absolute; inset: 0; z-index: 4; pointer-events: none; transition: background .6s ease; }
+#stage7-layer > * { pointer-events: auto; }
+/* The realization beat softly dims the room so the line can land. */
+#stage7-layer.reverent { background: rgba(40,26,12,.34); }
+
+#s7-joy { position: absolute; top: 44px; left: 14px; right: 14px; display: flex; align-items: center; gap: 8px; }
+.s7-joy-label { font-weight: 800; font-size: 13px; color: var(--accent-deep); width: 40px; }
+#s7-joy .s7-bar { flex: 1; height: 14px; background: rgba(185,118,10,.18); border-radius: 999px; overflow: hidden; }
+#s7-joy-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #ffb347, #ff7e9d); border-radius: 999px; transition: width .3s ease; }
+
+#s7-callbacks { position: absolute; top: 70px; left: 0; right: 0; display: flex; justify-content: center; gap: 8px; }
+.s7-cb {
+  font-weight: 800; font-size: 11px; color: var(--accent-deep);
+  background: var(--paper); border: 2px solid var(--accent); border-radius: 999px; padding: 4px 10px; opacity: .55;
+}
+.s7-cb.done { opacity: 1; border-color: var(--accent-deep); background: #fff3da; }
+
+#s7-prompt { position: absolute; top: 104px; left: 0; right: 0; text-align: center; font-weight: 800; font-size: 13px; color: var(--accent-deep); }
+
+#s7-interactions {
+  position: absolute; left: 14px; right: 14px; bottom: 18px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+.s7-inter {
+  font-family: 'Nunito',sans-serif; font-weight: 800; font-size: 14px; color: var(--accent-deep);
+  background: var(--paper); border: 2px solid var(--accent); padding: 14px 8px; border-radius: 14px; cursor: pointer;
+}
+.s7-inter:active { transform: translateY(2px); }
+.s7-inter.done { opacity: .5; background: #fff3da; border-style: dashed; }
+
+#s7-tableau {
+  position: absolute; inset: 0; z-index: 5;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  padding-top: 120px; pointer-events: none;
+}
+.s7-tab-title { font-family: 'Fredoka One','Nunito',cursive; font-size: 28px; color: var(--accent-deep); text-shadow: 0 2px 0 #fff; }
+.s7-tab-mentors { font-size: 34px; margin-top: 8px; letter-spacing: 6px; }
+
+#s7-end {
+  position: absolute; inset: 0; z-index: 6;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 30px; background: rgba(255,248,236,.9); color: var(--ink);
+}
+.s7-end-title {
+  font-family: 'Fredoka One','Nunito',cursive; font-size: 48px; color: var(--accent-deep);
+  text-shadow: 0 3px 0 #fff, 0 6px 14px rgba(185,118,10,.35);
+}
+.s7-end-sub { margin: 16px 6px 28px; font-size: 18px; max-width: 300px; font-weight: 700; }
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .big-btn, .mentor-card { transition: none; }

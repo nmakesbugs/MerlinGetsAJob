@@ -40,27 +40,24 @@ test('start button enters stage 1', async ({ page }) => {
 });
 
 // ═══════════════════════════════════════════════════════════
-// 3 & 4. Walk Stage 1 → 7 via the Continue button, then reach the ending.
+// 3 & 4. Every stage scene is reachable; the generic end scene + Play Again still work.
+// (All seven stages are now real scenes — no placeholders remain.)
 // ═══════════════════════════════════════════════════════════
-test('walks every placeholder stage in order and reaches the ending', async ({ page }) => {
+test('every stage is reachable and the end scene returns to title', async ({ page }) => {
   await page.goto('/');
 
-  // Stages 1–6 are full scenes (see stage1–6 specs); only Stage 7 remains a placeholder.
-  await page.evaluate(() => window.__merlinGame.goToStage('stage7-realjob'));
-
-  for (let i = 6; i < STAGE_IDS.length; i++) {
-    await waitForStage(page, STAGE_IDS[i]);
-    await expect(page.locator('#sv-badge')).toContainText('Stage ' + (i + 1));
-    if (i < STAGE_IDS.length - 1) await page.locator('#stage-continue').click();
+  // Each registered stage can be entered directly.
+  for (const id of STAGE_IDS) {
+    await page.evaluate((s) => window.__merlinGame.goToStage(s), id);
+    await waitForStage(page, id);
   }
 
-  // From Stage 7, Continue reaches the placeholder ending.
-  await page.locator('#stage-continue').click();
+  // The generic end scene renders and Play Again returns to the title.
+  await page.evaluate(() => window.__merlinGame.goToStage('__end'));
   await waitForStage(page, '__end');
   await expect(page.locator('#end-screen')).toBeVisible();
   await expect(page.locator('.end-title')).toContainText('The End');
 
-  // Play Again returns to the title.
   await page.locator('#end-restart').click();
   await waitForStage(page, 'title');
   await expect(page.locator('#title-screen')).toBeVisible();

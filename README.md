@@ -16,7 +16,24 @@ See the design docs for the full vision: [`DESIGN_BIBLE.md`](DESIGN_BIBLE.md),
 
 ## Status
 
-### Milestone 6 — Stage 6: "Hades Teaches Management" ✅ (current)
+### Milestone 7 — Stage 7: "Merlin's Real Job" ✅ (current) — all seven stages playable
+
+The emotional finale. Merlin comes home tired and unsure whether he ever found a "real job" —
+then the boys greet him and he realizes his job was here all along.
+
+- A golden-hour home; warm tap-through interactions (flop, the goofy thing, sniff out the lost
+  toy, group hug, hold-still-for-a-photo, let-the-little-one-win) fill a **monotonic Joy meter**
+  that only ever rises. No fail state, no difficulty.
+- Three **mentor callbacks** show the apprenticeships mattered — Ila's *stay* (photo),
+  Chinook's *nose* (find the toy), Hades's *composure* (let the little one win).
+- When Joy is full, **comedy steps back** and the sincere realization lands: *"My job is making
+  them happy. I've had it the whole time."* Ends on a held tableau (mentor cameo icons, the Home
+  motif resolved), then **The End** + Play Again.
+- Merlin lives with the family and the boys; the title's **"For Cyndie"** dedication stays
+  intact. Flags `stage7Started`, `stage7{Ila,Chinook,Hades}CallbackComplete`, `stage7JoyFull`,
+  `stage7Complete`.
+
+### Milestone 6 — Stage 6: "Hades Teaches Management" ✅
 
 The original **"Throne of Composure"** — a reverse-whack-a-mole where the winning skill is
 **restraint**. Hades (a large, athletic, imperious, code-drawn spotted cat) teaches that being
@@ -183,6 +200,11 @@ The test config (`tests/playwright.config.js`) auto-starts a static server on po
   **sunbeam restoring it**, delegate consuming a use, **Composure-zero comedic reset (no
   game-over)**, full Assist auto-play → Stage 7, and a verdict/tone guardrail (names "being
   loved"; no cruelty).
+- `tests/stage7.spec.js` — Stage 7 real content, direct entry, a canvas sanity check, the Joy
+  meter starting at 0 and **only increasing**, the required interactions, the three **mentor
+  callbacks**, Joy-full → **comedy-suppressed realization**, the realization naming Merlin's job,
+  the finale tableau + **The End** + **Play Again → title**, and a guardrail (no failure/sadness,
+  correct home geography, "For Cyndie" dedication intact).
 
 > Note: clickable elements use `box-shadow`-only glow pulses (never animated `transform`), and
 > tests advance via debug hooks (`drainDialogue`, `stage2AutoPlayDrill`) rather than

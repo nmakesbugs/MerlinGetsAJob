@@ -1794,6 +1794,237 @@ class Stage6Scene extends Scene {
   }
 }
 
+/* ================================================================
+   STAGE 7 — Merlin's Real Job (the emotional finale).
+   Merlin comes home tired and unsure, the boys greet him, and through
+   warm tap-through interactions a monotonic Joy meter fills. Three mentor
+   callbacks show the apprenticeships made him a better family dog. When
+   Joy is full, comedy steps back and the sincere realization lands. Ends
+   on a held tableau, the Home motif resolved, and "The End".
+   Merlin lives with Nick's family and the boys. No fail state. No scoring.
+   ================================================================ */
+const STAGE7_INTERACTIONS = [
+  { id: 'flop', label: '🐾 Flop beside the boys' },
+  { id: 'goofy', label: '😝 Do the goofy thing' },
+  { id: 'photo', label: '📸 Hold still for the photo', cb: 'ila' },
+  { id: 'find-toy', label: '👃 Sniff out the lost toy', cb: 'chinook' },
+  { id: 'let-win', label: '🧸 Let the little one win', cb: 'hades' },
+  { id: 'hug', label: '🫂 Pile into a group hug' },
+];
+const STAGE7_CB_FLAG = { ila: 'stage7IlaCallbackComplete', chinook: 'stage7ChinookCallbackComplete', hades: 'stage7HadesCallbackComplete' };
+const STAGE7_TEXT = {
+  homecoming: [
+    { speaker: 'Merlin', text: 'Home. Finally. My paws are so tired.' },
+    { speaker: 'Merlin', text: 'Ila is brave.' },
+    { speaker: 'Merlin', text: 'Chinook has the best nose in the county.' },
+    { speaker: 'Merlin', text: 'Hades runs an entire household with one eyebrow.' },
+    { speaker: 'Merlin', text: 'And me? I tried every job. I wasn’t great at any of them.' },
+    { speaker: 'Merlin', text: '...Maybe I just don’t have a job.' },
+    { speaker: 'The boys', text: 'MERLIN!! He’s home!' },
+    { speaker: 'Merlin', text: '...Oh. Hello, boys.' },
+  ],
+  realization: [
+    { speaker: 'Merlin', text: 'Oh. Oh, I see it now.' },
+    { speaker: 'Merlin', text: 'Nobody else can do this one.' },
+    { speaker: 'Merlin', text: 'The boys don’t need me to track, fight, hunt, or be in charge.' },
+    { speaker: 'Merlin', text: 'They need me to be here. Goofy. Warm. Theirs.' },
+    { speaker: 'Merlin', text: 'My job is making them happy.' },
+    { speaker: 'Merlin', text: 'I’ve had it the whole time.' },
+  ],
+  tableau: [
+    { speaker: 'Hades', text: '…He found it. About time.' },
+  ],
+  prompt: 'Be Merlin. Make the boys happy. 🧡',
+};
+
+// Two simple, warm kid figures (the boys) — generic and affectionate.
+function drawKid(g, x, y, shirt, skin, hair) {
+  g.fill('#000000', 0.12); g.ellipse(x, y + 54, 38, 9);
+  g.fill(shirt, 1); g.rrect(x - 15, y + 16, 30, 30, 7);            // body
+  g.fill(shirt, 1); g.rrect(x - 22, y + 18, 9, 18, 4); g.rrect(x + 13, y + 18, 9, 18, 4); // arms
+  g.fill('#3a4a66', 1); g.rrect(x - 13, y + 44, 11, 14, 4); g.rrect(x + 2, y + 44, 11, 14, 4); // legs
+  g.fill(skin, 1); g.ellipse(x, y, 26, 26);                        // head
+  g.fill(hair, 1); g.ellipse(x, y - 8, 27, 16); g.rrect(x - 13, y - 12, 26, 8, 4); // hair
+  g.fill('#23150c', 1); g.circle(x - 6, y + 1, 2.4); g.circle(x + 6, y + 1, 2.4); // eyes
+  g.fill('#b5654a', 1); g.rrect(x - 5, y + 8, 10, 2.4, 1.2);       // happy smile
+  g.fill('#ffffff', 1); g.circle(x - 6.7, y + 0.3, 0.8); g.circle(x + 5.3, y + 0.3, 0.8);
+}
+function drawBoys(ctx) {
+  const g = pen(ctx);
+  drawKid(g, 250, 392, '#5a8fd6', '#f3c9a0', '#3a2a18');
+  drawKid(g, 320, 410, '#e07a4a', '#eebb92', '#5a3a20');
+}
+
+// Golden-hour home — warm amber wash, low sun, cozy rug.
+function drawHomeGolden(ctx) {
+  const g = pen(ctx);
+  g.fill('#ffe2b0', 1); g.rect(0, 0, GW, 452);
+  g.fill('#f0c07a', 1); g.rect(0, 452, GW, GH - 452);
+  g.fill('#e0a458', 1); g.rect(0, 452, GW, 5);
+  g.fill('#ffcf86', 1); g.rrect(32, 60, 120, 130, 10);             // window
+  g.fill('#ff9e5c', 1); g.circle(92, 150, 30);                     // low sunset sun
+  g.fill('#ffd9a0', 0.6); g.circle(92, 150, 48);
+  g.fill('#b8824e', 1); g.rect(28, 54, 128, 8); g.rect(28, 186, 128, 8); g.rect(88, 60, 7, 130);
+  g.fill('#ffe9b0', 0.4); g.tri(60, 192, 150, 192, 110, 452);      // warm sunbeam
+  g.fill('#d98a4a', 1); g.ellipse(160, 560, 320, 120); g.fill('#e8a35e', 1); g.ellipse(160, 560, 240, 88);
+  ctx.globalAlpha = 1;
+}
+
+class Stage7Scene extends Scene {
+  enter() {
+    this.game.setAccent('home');
+    this.game.setHud('The End');
+    this.game.state.flags.stage7Started = true;
+    this.t = 0;
+    this.phase = 'homecoming';      // homecoming|play|realization|tableau|end
+    this.joy = 0;
+    this.realizing = false;
+    this.done = new Set();
+    this.canvas = document.getElementById('game-canvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.layer = document.getElementById('stage7-layer');
+    this.joyFill = document.getElementById('s7-joy-fill');
+    this.interEl = document.getElementById('s7-interactions');
+    this.tableauEl = document.getElementById('s7-tableau');
+    this.endEl = document.getElementById('s7-end');
+    this.layer.style.display = 'block';
+    this.interEl.style.display = 'none';
+    this.tableauEl.style.display = 'none';
+    this.endEl.style.display = 'none';
+    document.getElementById('s7-callbacks').style.display = 'none';
+    this._updateJoy();
+    SFX.motif('home');
+    this.game.dialogue.show(STAGE7_TEXT.homecoming, () => this._beginPlay());
+  }
+
+  _updateJoy() { this.joyFill.style.width = Math.min(100, this.joy) + '%'; }
+
+  _beginPlay() {
+    this.phase = 'play';
+    document.getElementById('s7-callbacks').style.display = 'flex';
+    this.interEl.innerHTML = '';
+    STAGE7_INTERACTIONS.forEach(it => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 's7-inter'; b.setAttribute('data-id', it.id);
+      b.textContent = it.label;
+      this.bind.on(b, 'click', () => this._doInteraction(it.id));
+      this.interEl.appendChild(b);
+    });
+    this.interEl.style.display = 'flex';
+    this._banner();
+  }
+  _banner() {
+    const p = document.getElementById('s7-prompt');
+    if (p) p.textContent = STAGE7_TEXT.prompt;
+  }
+
+  _doInteraction(id) {
+    if (this.phase !== 'play' || this.done.has(id)) return false;
+    const it = STAGE7_INTERACTIONS.find(i => i.id === id);
+    if (!it) return false;
+    this.done.add(id);
+    this.joy = Math.min(100, this.joy + 17);     // monotonic — only ever rises
+    SFX.cheer();
+    if (it.cb) {
+      this.game.state.flags[STAGE7_CB_FLAG[it.cb]] = true;
+      const chip = document.querySelector('#s7-callbacks .s7-cb[data-cb="' + it.cb + '"]');
+      if (chip) chip.classList.add('done');
+    }
+    const btn = this.interEl.querySelector('.s7-inter[data-id="' + id + '"]');
+    if (btn) { btn.disabled = true; btn.classList.add('done'); }
+    this._updateJoy();
+    if (this.done.size >= STAGE7_INTERACTIONS.length) this._onJoyFull();
+    return true;
+  }
+
+  _onJoyFull() {
+    if (this.game.state.flags.stage7JoyFull) return;
+    this.joy = 100;
+    this.game.state.flags.stage7JoyFull = true;
+    this._updateJoy();
+    this._realization();
+  }
+
+  _realization() {
+    this.phase = 'realization';
+    this.realizing = true;                       // comedy SFX are suppressed during this beat
+    this.interEl.style.display = 'none';
+    this.layer.classList.add('reverent');
+    SFX.sigh();                                  // a soft, sincere breath — not a comedy cue
+    this.game.dialogue.show(STAGE7_TEXT.realization, () => this._tableau());
+  }
+
+  _tableau() {
+    this.phase = 'tableau';
+    this.realizing = false;
+    this.layer.classList.remove('reverent');
+    this.tableauEl.style.display = 'flex';
+    SFX.motif('home');                           // the Home lullaby, resolved
+    this.game.dialogue.show(STAGE7_TEXT.tableau, () => this._theEnd());
+  }
+
+  _theEnd() {
+    this.phase = 'end';
+    this.game.state.flags.stage7Complete = true;
+    this.game.state.joy = this.joy;
+    this.game.state.stars['stage7-realjob'] = 3;
+    this.endEl.style.display = 'flex';
+    SFX.cheer();
+    const replay = document.getElementById('s7-replay');
+    this.bind.on(replay, 'click', () => { SFX.tap(); this.game.goToStage('title'); });
+  }
+
+  update(dt) { this.t += dt; }
+
+  render() {
+    if (!this.ctx) return;
+    const ctx = this.ctx, t = this.t;
+    drawHomeGolden(ctx);
+    // The boys appear once they've greeted him (play onward).
+    if (this.phase !== 'homecoming') drawBoys(ctx);
+    const joyful = this.joy / 100;
+    const bob = Math.sin(t / (520 - joyful * 200)) * (2 + joyful * 2);
+    const wag = Math.sin(t / (260 - joyful * 140)) * (0.5 + joyful * 0.6);
+    ctx.save(); ctx.translate(40, 384 - joyful * 6 + bob); ctx.scale(1.4, 1.4); drawMerlin(ctx, wag); ctx.restore();
+  }
+
+  // ── Debug/test hooks (call the real production methods) ──
+  getState() {
+    return {
+      phase: this.phase,
+      joy: this.joy,
+      joyFull: !!this.game.state.flags.stage7JoyFull,
+      realizing: this.realizing,
+      comedySuppressed: this.realizing,
+      interactionsLeft: STAGE7_INTERACTIONS.filter(i => !this.done.has(i.id)).map(i => i.id),
+      done: Array.from(this.done),
+    };
+  }
+  doInteraction(id) { return this._doInteraction(id); }
+  fillJoy() { STAGE7_INTERACTIONS.forEach(i => this._doInteraction(i.id)); return this.joy; }
+  autoPlayFinale() {
+    let guard = 0;
+    while (this.game.state.currentStage === 'stage7-realjob' && !this.game.state.flags.stage7Complete && guard++ < 80) {
+      if (this.game.dialogue.box.style.display !== 'none') { this.game.dialogue.advance(); continue; }
+      const next = STAGE7_INTERACTIONS.find(i => !this.done.has(i.id));
+      if (next && this.phase === 'play') { this._doInteraction(next.id); continue; }
+      break;
+    }
+    return this.phase;
+  }
+
+  exit() {
+    this.layer.style.display = 'none';
+    this.layer.classList.remove('reverent');
+    this.tableauEl.style.display = 'none';
+    this.endEl.style.display = 'none';
+    this.interEl.innerHTML = '';
+    if (this.ctx) this.ctx.clearRect(0, 0, GW, GH);
+    this.game.dialogue.hide();
+    super.exit();
+  }
+}
+
 /* ── Ending scene ── */
 class EndScene extends Scene {
   enter() {
@@ -1815,6 +2046,7 @@ const SCENE_OVERRIDES = {
   'stage4-sniff': Stage4Scene,
   'stage5-birddog': Stage5Scene,
   'stage6-hades': Stage6Scene,
+  'stage7-realjob': Stage7Scene,
 };
 
 /* ── Tiny view helpers ── */
@@ -1970,6 +2202,19 @@ const game = {
       STAGE6_TEXT.intro.concat(STAGE6_TEXT.demo, STAGE6_TEXT.verdict).forEach(l => parts.push(l.text));
       Object.keys(STAGE6_EVENTS).forEach(k => parts.push(STAGE6_EVENTS[k].label));
       parts.push(STAGE6_TEXT.spiral, STAGE6_TEXT.ignored, 'Composure', 'Happiness', 'Delegate');
+      return parts.join(' \n ');
+    },
+    // Stage 7 hooks (delegate to the live scene; reuse real production methods).
+    stage7GetState() { return game.scene && game.scene.getState ? game.scene.getState() : null; },
+    stage7DoInteraction(id) { return game.scene && game.scene.doInteraction ? game.scene.doInteraction(id) : false; },
+    stage7FillJoy() { return game.scene && game.scene.fillJoy ? game.scene.fillJoy() : false; },
+    stage7AutoPlayFinale() { return game.scene && game.scene.autoPlayFinale ? game.scene.autoPlayFinale() : null; },
+    // All Stage 7 player-facing strings (for the finale guardrail scan).
+    stage7AllText() {
+      const parts = [];
+      STAGE7_TEXT.homecoming.concat(STAGE7_TEXT.realization, STAGE7_TEXT.tableau).forEach(l => parts.push(l.text));
+      STAGE7_INTERACTIONS.forEach(i => parts.push(i.label));
+      parts.push(STAGE7_TEXT.prompt, 'The End', "Merlin's job: making the boys happy.");
       return parts.join(' \n ');
     },
   },
