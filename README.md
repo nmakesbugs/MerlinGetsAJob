@@ -16,7 +16,29 @@ See the design docs for the full vision: [`DESIGN_BIBLE.md`](DESIGN_BIBLE.md),
 
 ## Status
 
-### 0.82.1 — Stage 4 finalization micro-patch ✅ (current)
+### 0.9 — Narrative & Emotional Pass ✅ (current)
+
+Surgical writing pass — mechanics unchanged from 0.82/0.82.1.
+
+- **Stronger Merlin voice:** short declarative sentences, dog-literal earnestness ("I am deeply,
+  professionally exhausted."), over-serious about "career" and "follow-through."
+- **Cyndie hello/cuddle continuity** in Stage 1 with correct geography: Cyndie *visits* and says
+  Merlin is very good at cuddling. Merlin's hello-saying is declared a serious duty ("if someone
+  misses it, I say hello again — that is follow-through").
+- **Stage 7 homecoming sharpened:** Merlin names each mentor with admiration, then doubts
+  himself; the boys' greeting triggers the hello callback ("Hello! I am here! If you missed it
+  the first time, I can say it again. That is my policy.") — echoing Stage 1 without
+  mentioning Cyndie.
+- **Stage 7 realization tightened (7 lines):** "The boys do not need me to be Ila / Chinook /
+  Hades. They need me to be theirs. To flop close enough that nobody has to ask if they are
+  loved. My job is making them happy. I had it the whole time."
+- **Stage 7 tableau:** Hades adds one dry second line: "Do not tell him I said so."
+- Stage 5 outro first line sharpened for Merlin voice.
+- **Cyndie geography preserved throughout.** No line implies Merlin lives with Cyndie or that
+  she is his owner. "For Cyndie" dedication intact.
+- Cache bumped to `?v=0.9`. Full suite: **110 passed, 0 failed**.
+
+### 0.82.1 — Stage 4 finalization micro-patch ✅
 
 Tiny playtest-tuning patch (not a narrative pass):
 

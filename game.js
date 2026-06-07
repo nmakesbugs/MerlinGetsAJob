@@ -282,7 +282,8 @@ class Stage1Scene extends Scene {
       { speaker: 'Merlin', text: "Ah — morning. Sun's up. The boys are off being boys. And me? I'm at my post. Professionally lounging." },
       { speaker: 'Merlin', text: "...Hold on. Is lounging a job?" },
       { speaker: 'Narrator', text: "It is not." },
-      { speaker: 'Merlin', text: "Let me think about this seriously. Anthony has a job. Cyndie has a job." },
+      { speaker: 'Merlin', text: "Let me think seriously. Anthony has a job. Cyndie visits and says I am very good at cuddling." },
+      { speaker: 'Merlin', text: "I also say hello. And if someone misses it, I say hello again. That is follow-through." },
       { speaker: 'Merlin', text: "The CAT has a job, and he mostly sleeps on the warm laptop." },
       { speaker: 'Merlin', text: "I, a serious adult dog, have NO job. This is a crisis. A career crisis." },
     ], () => this._bowl());
@@ -1396,7 +1397,7 @@ const STAGE5_TEXT = {
     { speaker: 'Handler', text: '…now.' },
   ],
   outro: [
-    { speaker: 'Merlin', text: 'I found it and I didn’t pounce and the bird is fine and the human is happy and I am… so tired.' },
+    { speaker: 'Merlin', text: "I found it. I did not pounce. The bird is fine. The human is happy. I am deeply, professionally exhausted." },
     { speaker: 'Merlin', text: 'This is real work. Slow, and careful, and it’s for someone else.' },
     { speaker: 'Merlin', text: 'Chinook’s going to be amazing at this.' },
     { speaker: 'Merlin', text: 'It’s just… not me, is it.' },
@@ -2058,7 +2059,7 @@ class Stage6Scene extends Scene {
    Merlin lives with Nick's family and the boys. No fail state. No scoring.
    ================================================================ */
 const STAGE7_INTERACTIONS = [
-  { id: 'flop', label: '🐾 Flop beside the boys' },
+  { id: 'flop', label: '🐾 Flop close beside the boys' },
   { id: 'goofy', label: '😝 Do the goofy thing' },
   { id: 'photo', label: '📸 Hold still for the photo', cb: 'ila' },
   { id: 'find-toy', label: '👃 Sniff out the lost toy', cb: 'chinook' },
@@ -2069,24 +2070,27 @@ const STAGE7_CB_FLAG = { ila: 'stage7IlaCallbackComplete', chinook: 'stage7Chino
 const STAGE7_TEXT = {
   homecoming: [
     { speaker: 'Merlin', text: 'Home. Finally. My paws are so tired.' },
-    { speaker: 'Merlin', text: 'Ila is brave.' },
-    { speaker: 'Merlin', text: 'Chinook has the best nose in the county.' },
+    { speaker: 'Merlin', text: 'Ila is brave and disciplined and excellent.' },
+    { speaker: 'Merlin', text: 'Chinook has the best nose in the county. She is six months old.' },
     { speaker: 'Merlin', text: 'Hades runs an entire household with one eyebrow.' },
-    { speaker: 'Merlin', text: 'And me? I tried every job. I wasn’t great at any of them.' },
-    { speaker: 'Merlin', text: '...Maybe I just don’t have a job.' },
-    { speaker: 'The boys', text: 'MERLIN!! He’s home!' },
-    { speaker: 'Merlin', text: '...Oh. Hello, boys.' },
+    { speaker: 'Merlin', text: "And me? I tried every job. I was not great at any of them." },
+    { speaker: 'Merlin', text: "Maybe I just do not have a job. This thought is very loud." },
+    { speaker: 'The boys', text: "MERLIN!! He’s home!" },
+    { speaker: 'Merlin', text: 'Hello! I am here!' },
+    { speaker: 'Merlin', text: 'If you missed it the first time, I can say it again. That is my policy.' },
   ],
   realization: [
-    { speaker: 'Merlin', text: 'Oh. Oh, I see it now.' },
-    { speaker: 'Merlin', text: 'Nobody else can do this one.' },
-    { speaker: 'Merlin', text: 'The boys don’t need me to track, fight, hunt, or be in charge.' },
-    { speaker: 'Merlin', text: 'They need me to be here. Goofy. Warm. Theirs.' },
-    { speaker: 'Merlin', text: 'My job is making them happy.' },
-    { speaker: 'Merlin', text: 'I’ve had it the whole time.' },
+    { speaker: 'Merlin', text: 'Oh.' },
+    { speaker: 'Merlin', text: "The boys do not need me to be Ila." },
+    { speaker: 'Merlin', text: "They do not need me to be Chinook." },
+    { speaker: 'Merlin', text: 'They definitely do not need me to be Hades.' },
+    { speaker: 'Merlin', text: 'They need me to be theirs.' },
+    { speaker: 'Merlin', text: 'To flop close enough that nobody has to ask if they are loved.' },
+    { speaker: 'Merlin', text: 'My job is making them happy. I had it the whole time.' },
   ],
   tableau: [
     { speaker: 'Hades', text: '…He found it. About time.' },
+    { speaker: 'Hades', text: 'Do not tell him I said so.' },
   ],
   prompt: 'Help the boys laugh — fill the room with Joy. 🧡',
 };
