@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#f0a500">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>Merlin Gets a Job</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap">
+<link rel="stylesheet" href="style.css?v=0.2">
+</head>
+<body data-accent="home" data-stage="title">
+
+<!-- Scaled to fit any screen; logical size is 390x700 portrait. -->
+<div id="viewport">
+  <div id="game-frame">
+
+    <!-- Canvas reserved for future minigame rendering (unused in Milestone 0). -->
+    <canvas id="game-canvas" width="390" height="700"></canvas>
+
+    <!-- DOM UI overlay layer (sits above canvas). -->
+    <div id="ui-layer">
+
+      <!-- Persistent HUD: stage tag + Assist/Challenge toggle. -->
+      <div id="hud">
+        <span id="hud-stage">Title</span>
+        <button id="assist-toggle" type="button" aria-pressed="true">Assist: ON</button>
+      </div>
+
+      <!-- Title screen. -->
+      <div id="title-screen">
+        <div class="ts-kicker">The third Merlin adventure</div>
+        <h1 class="ts-title">Merlin<br>Gets a Job</h1>
+        <p class="ts-sub">Merlin tries every job in the house — and learns the best one is just being himself.</p>
+        <button id="start-btn" class="big-btn" type="button">▶ Start</button>
+        <div class="ts-dedication" id="dedication" data-testid="dedication">For Cyndie 🐾</div>
+      </div>
+
+      <!-- Placeholder stage view (number, title, flavor, continue). -->
+      <div id="stage-view" style="display:none">
+        <div class="sv-badge" id="sv-badge">Stage 1</div>
+        <h2 class="sv-title" id="sv-title">Stage Title</h2>
+        <p class="sv-flavor" id="sv-flavor">Flavor line.</p>
+        <div class="sv-note">Milestone 0 placeholder — real gameplay arrives in a later milestone.</div>
+        <button id="stage-continue" class="big-btn" type="button">Continue ▶</button>
+      </div>
+
+      <!-- Ending placeholder. -->
+      <div id="end-screen" style="display:none">
+        <h2 class="end-title">The End</h2>
+        <p class="end-sub">Merlin's real job: making the boys happy. 🧡</p>
+        <button id="end-restart" class="big-btn" type="button">↺ Play Again</button>
+      </div>
+
+      <!-- Stage 1 interactive layer (mentor montage, glowing prop, choice). -->
+      <div id="stage1-layer" style="display:none">
+        <div id="mentor-montage" style="display:none">
+          <div class="mentor-card" data-mentor="ila">
+            <div class="mc-face">🐕‍🦺</div>
+            <div class="mc-name">Ila</div>
+            <div class="mc-tag">Working dog · discipline &amp; control</div>
+          </div>
+          <div class="mentor-card" data-mentor="chinook">
+            <div class="mc-face">🐶</div>
+            <div class="mc-name">Chinook</div>
+            <div class="mc-tag">Bloodhound pup · the big sniff</div>
+          </div>
+          <div class="mentor-card" data-mentor="hades">
+            <div class="mc-face">🐆</div>
+            <div class="mc-name">Hades</div>
+            <div class="mc-tag">The cat in charge</div>
+          </div>
+        </div>
+        <button id="glow-bowl" type="button" style="display:none" aria-label="Merlin's empty food bowl">🥣</button>
+        <div id="stage1-hint" style="display:none"></div>
+        <div id="choice-panel" style="display:none">
+          <div id="choice-title">— Choose —</div>
+          <div id="choice-options"></div>
+        </div>
+      </div>
+
+      <!-- Shared dialogue box (used from Stage 1 onward). -->
+      <div id="dialogue-box" style="display:none">
+        <div class="dlg-speaker" id="dlg-speaker"></div>
+        <div class="dlg-text" id="dlg-text"></div>
+        <div class="dlg-continue" id="dlg-continue">▼ tap</div>
+      </div>
+
+    </div><!-- #ui-layer -->
+  </div><!-- #game-frame -->
+</div><!-- #viewport -->
+
+<script src="game.js?v=0.2"></script>
+</body>
+</html>

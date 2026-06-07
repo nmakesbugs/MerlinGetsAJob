@@ -1,0 +1,14 @@
+{
+  "name": "merlin-gets-a-job",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Merlin Gets a Job — static vanilla-JS arcade/PWA game (Milestone 0 skeleton).",
+  "scripts": {
+    "test": "playwright test --config tests/playwright.config.js",
+    "serve": "npx http-server . -p 8383 --silent"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "http-server": "^14.1.1"
+  }
+}
