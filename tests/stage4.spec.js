@@ -221,3 +221,26 @@ test('Challenge mode uses smaller targets', async ({ page }) => {
   await page.evaluate(() => window.__merlinGame.debug.stage4SpawnNextTarget());
   expect(await page.locator('.s4-target.primary.small').count()).toBeGreaterThan(0);
 });
+
+// ═══════════════════════════════════════════════════════════
+// 0.81 Polish — Chinook's point direction + Big Sniff highlight.
+// ═══════════════════════════════════════════════════════════
+test('Chinook points at the spot, and the target appears there', async ({ page }) => {
+  await enterAndStart(page, 5);
+  const st = await s4(page);
+  expect(st.telegraphing).toBe(true);
+  expect(st.target).toBeNull();
+  expect(st.pointAt).not.toBeNull();                       // Chinook is already pointing
+  await page.evaluate(() => window.__merlinGame.debug.stage4SpawnNextTarget());
+  const after = await s4(page);
+  expect(after.target.x).toBe(st.pointAt.x);               // target appears where he pointed
+  expect(after.target.y).toBe(st.pointAt.y);
+});
+
+test('Big Sniff highlights the gallery field', async ({ page }) => {
+  await enterAndStart(page, 5);
+  await page.evaluate(() => window.__merlinGame.debug.stage4SpawnNextTarget());
+  await page.evaluate(() => window.__merlinGame.debug.stage4TriggerBigSniff());
+  await page.evaluate(() => window.__merlinGame.debug.stage4TapTarget());   // → next round begins with Big Sniff active
+  expect(await page.locator('#s4-field.bigsniff').count()).toBe(1);
+});

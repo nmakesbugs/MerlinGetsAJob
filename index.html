@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=0.8">
+<link rel="stylesheet" href="style.css?v=0.81">
 </head>
 <body data-accent="home" data-stage="title">
 
@@ -164,7 +164,15 @@
           <div class="s6-meter"><span class="s6-meter-label">Happy</span><div class="s6-bar happy"><div id="s6-happy-fill"></div></div></div>
         </div>
         <div id="s6-round">Hades’ Domain</div>
+        <div id="s6-legend" style="display:none">
+          <span>🟡 handle</span><span>⌁ ignore</span><span>☀️ rest</span><span>🤝 delegate</span>
+        </div>
         <div id="s6-events"></div>
+        <div id="s6-rules" style="display:none">
+          <div class="s6-rules-title">How to Manage</div>
+          <ul id="s6-rules-list"></ul>
+          <button id="s6-rules-ok" class="s6-btn" type="button">Got it!</button>
+        </div>
         <div id="s6-banner" style="display:none"></div>
         <div id="s6-controls"><button id="s6-delegate" class="s6-btn" type="button">🤝 Delegate (3)</button></div>
       </div>
@@ -201,6 +209,6 @@
   </div><!-- #game-frame -->
 </div><!-- #viewport -->
 
-<script src="game.js?v=0.8"></script>
+<script src="game.js?v=0.81"></script>
 </body>
 </html>

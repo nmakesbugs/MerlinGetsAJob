@@ -16,7 +16,24 @@ See the design docs for the full vision: [`DESIGN_BIBLE.md`](DESIGN_BIBLE.md),
 
 ## Status
 
-### 0.8 — Gameplay & Mechanics Pass ✅ (current)
+### 0.81 — Gameplay Polish Patch ✅ (current)
+
+Focused UX/clarity polish from playtest feedback (not the narrative pass):
+
+- **Stage 6 / Hades clarity:** a one-time **"How to Manage" rules card** + a persistent legend
+  (🟡 handle · ⌁ ignore · ☀️ rest · 🤝 delegate); clear event coding incl. a "can delegate" cue;
+  explicit feedback when you tap junk ("That was junk — Composure down."), rest the sunbeam, or
+  ignore correctly. **Delegate now visibly works** — it resolves the best eligible task with a
+  helper response ("Chinook handled it!"), or says "Nothing worth delegating yet" without wasting
+  a use.
+- **Stage 4 / Chinook fun:** Chinook now **points at where the target will appear** (nose-line +
+  scent cone + ring), the target spawns there, light per-kind variety, an obvious "do not tap"
+  Hades cameo, and a **Big Sniff** field highlight + slower, clearer point.
+- **Stage 7 / finale:** now shows **three boys**, presents interactions **one warm card at a
+  time** (no crowded 6-button panel), and a clearer prompt ("fill the room with Joy"). Still
+  sweet, no-fail, Joy-only-rises.
+
+### 0.8 — Gameplay & Mechanics Pass ✅
 
 Made the game feel like a real game without losing the warmth. **Assist Mode stays easy and
 guaranteed-finishable**; **Challenge Mode** is now meaningfully more thoughtful.

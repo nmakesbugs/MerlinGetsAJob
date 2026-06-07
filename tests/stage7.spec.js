@@ -51,20 +51,29 @@ test('Merlin renders and the Joy meter starts at zero', async ({ page }) => {
 });
 
 // ═══════════════════════════════════════════════════════════
-// 5 & 6. Required interactions exist; Joy only increases.
+// 5 & 6. Interactions are sequential (not a crowded panel); Joy only increases.
 // ═══════════════════════════════════════════════════════════
-test('required interactions exist and Joy only increases', async ({ page }) => {
+test('interactions are sequential and Joy only increases', async ({ page }) => {
   await enterPlay(page);
-  for (const id of ['flop', 'goofy', 'find-toy', 'hug']) {
-    await expect(page.locator(`.s7-inter[data-id="${id}"]`)).toBeVisible();
-  }
+  // Only ONE warm action is shown at a time (less crowded than the old 6-button panel).
+  expect((await s7(page)).visibleInteractions).toBe(1);
+  await expect(page.locator('.s7-inter')).toHaveCount(1);
+  const first = await page.locator('.s7-inter').getAttribute('data-id');
+  expect(first).toBe('flop');                       // the sequence starts with "Flop beside the boys"
+
   let joy = (await s7(page)).joy;
-  for (const id of ['flop', 'goofy', 'hug']) {
-    await page.evaluate((i) => window.__merlinGame.debug.stage7DoInteraction(i), id);
+  for (let i = 0; i < 3; i++) {
+    await page.locator('.s7-inter').click();        // tap the current single card
     const next = (await s7(page)).joy;
     expect(next).toBeGreaterThan(joy);              // strictly up, never down
     joy = next;
+    expect((await s7(page)).visibleInteractions).toBeLessThanOrEqual(1);  // never crowded
   }
+});
+
+test('three boys are represented in the finale', async ({ page }) => {
+  await enterStage7(page);
+  expect((await s7(page)).boyCount).toBe(3);
 });
 
 // ═══════════════════════════════════════════════════════════

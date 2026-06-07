@@ -1102,9 +1102,19 @@ class Stage4Scene extends Scene {
   _beginRound() {
     this.telegraphing = true;
     this.target = null;
+    // Roll the upcoming target now so Chinook can POINT at where it will appear.
+    const r = this.rng;
+    const kind = r() < 0.5 ? 'duck' : 'clay';
+    const x = Math.round(12 + r() * 64);
+    const y = Math.round(16 + r() * 30);
+    this.pending = { kind, x, y };
+    this.pointAt = { x, y };
     this.telegraphEl.style.display = 'block';
+    if (this.field) this.field.classList.toggle('bigsniff', this.bigSniffActive);
     SFX.sniff();
-    this.bind.timeout(() => this._spawnRound(), this._assist() ? 1100 : 600);
+    // Big Sniff gives a longer, clearer point (feels rewarding).
+    const delay = this.bigSniffActive ? (this._assist() ? 1500 : 1100) : (this._assist() ? 1100 : 600);
+    this.bind.timeout(() => this._spawnRound(), delay);
   }
 
   _spawnRound() {
@@ -1112,10 +1122,9 @@ class Stage4Scene extends Scene {
     this.telegraphing = false;
     this.telegraphEl.style.display = 'none';
     const r = this.rng;
-    const kind = r() < 0.5 ? 'duck' : 'clay';
-    const x = Math.round(12 + r() * 64);
-    const y = Math.round(16 + r() * 30);
-    this.target = { kind, x, y, el: null };
+    const p = this.pending || { kind: r() < 0.5 ? 'duck' : 'clay', x: Math.round(12 + r() * 64), y: Math.round(16 + r() * 30) };
+    this.target = { kind: p.kind, x: p.x, y: p.y, el: null };
+    this.pending = null;
     this._addEl(this.target, true);
     // Challenge: decoys from the first wave and more often; Assist: gentler.
     const decoyFrom = this._assist() ? 2 : 1;
@@ -1131,9 +1140,10 @@ class Stage4Scene extends Scene {
   _addEl(t, primary) {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 's4-target' + (primary ? ' primary' : ' decoy') + (this._assist() ? '' : ' small');
+    b.className = 's4-target s4-kind-' + t.kind + (primary ? ' primary' : ' decoy') + (this._assist() ? '' : ' small');
     b.setAttribute('data-kind', t.kind);
     b.setAttribute('data-role', primary ? 'primary' : 'decoy');
+    if (t.kind === 'hades') b.setAttribute('aria-label', 'Hades — do not tap');
     b.style.left = t.x + '%';
     b.style.top = t.y + '%';
     b.textContent = primary ? S4_TARGET[t.kind] : S4_DECOY[t.kind];
@@ -1223,9 +1233,24 @@ class Stage4Scene extends Scene {
     drawSkyField(ctx);
     ctx.save(); ctx.translate(2, 372 + Math.sin(t / 520) * 3); ctx.scale(1.15, 1.15); drawMerlin(ctx, Math.sin(t / 220)); ctx.restore();
     ctx.save(); ctx.translate(150, 360 + Math.sin(t / 300) * 3); ctx.scale(1.25, 1.25); drawChinook(ctx); ctx.restore();
-    if (this.telegraphing) {
-      ctx.save(); ctx.strokeStyle = 'rgba(160,82,45,0.5)'; ctx.setLineDash([4, 6]); ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(330, 396); ctx.lineTo(300, 180); ctx.stroke(); ctx.restore();
+    // Chinook POINTS at where the target will appear — a nose-line + scent cone toward pointAt.
+    if (this.telegraphing && this.pointAt) {
+      const nx = 318, ny = 398;                                   // Chinook's nose (canvas px)
+      const tx = this.pointAt.x / 100 * GW, ty = this.pointAt.y / 100 * GH;
+      const strong = this.bigSniffActive ? 0.85 : 0.55;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(160,82,45,' + strong + ')'; ctx.setLineDash([5, 6]); ctx.lineWidth = this.bigSniffActive ? 5 : 3;
+      ctx.beginPath(); ctx.moveTo(nx, ny); ctx.lineTo(tx, ty); ctx.stroke();
+      // scent cone (a soft triangle hint) + a ring at the spot
+      ctx.setLineDash([]); ctx.fillStyle = 'rgba(196,98,45,0.10)';
+      const ang = Math.atan2(ty - ny, tx - nx), sp = 0.16;
+      ctx.beginPath(); ctx.moveTo(nx, ny);
+      ctx.lineTo(nx + Math.cos(ang - sp) * 260, ny + Math.sin(ang - sp) * 260);
+      ctx.lineTo(nx + Math.cos(ang + sp) * 260, ny + Math.sin(ang + sp) * 260);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(196,98,45,' + strong + ')'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(tx, ty, this.bigSniffActive ? 28 : 20, 0, 6.2832); ctx.stroke();
+      ctx.restore();
     }
   }
 
@@ -1240,6 +1265,7 @@ class Stage4Scene extends Scene {
       bigSniffFull: this.bigSniff >= 100,
       bigSniffActive: this.bigSniffActive,
       telegraphing: this.telegraphing,
+      pointAt: this.pointAt ? { x: this.pointAt.x, y: this.pointAt.y } : null,
       target: this.target ? { kind: this.target.kind, x: this.target.x, y: this.target.y } : null,
       decoy: this.decoy ? { kind: this.decoy.kind } : null,
       lastResolve: this.lastResolve,
@@ -1571,7 +1597,18 @@ const STAGE6_TEXT = {
     { speaker: 'Hades', text: 'For you? Apparently.' },
   ],
   spiral: 'Merlin spirals into chaos! Hades sighs and resets the room.',
-  ignored: 'Ignored — wisely.',
+  ignored: 'Ignored — wisely. ✓',
+  junkTap: 'That was junk. Composure down. (Hades sighs.)',
+  rest: 'Strategic rest. ☀️ Composure up.',
+  noDelegate: 'Nothing worth delegating yet.',
+  rules: [
+    'Hades Rule #1: Do not tap everything.',
+    '🟡 Gold glow = handle it (boys, bowl, squabble).',
+    '⌁ Dim & dashed = ignore it (leaf, doorbell, noise).',
+    '☀️ Sunbeam = rest and regain Composure.',
+    '🤝 Delegate = hand one task to a helper.',
+  ],
+  helpers: ['Chinook handled it!', 'Roomba deployed!', 'The boys solved it together!'],
 };
 const S6_SLOTS = [[24, 36], [62, 30], [42, 52], [76, 50], [28, 60], [60, 62]];
 
@@ -1639,14 +1676,22 @@ class Stage6Scene extends Scene {
     this.delegatesUsed = 0;
     this.junkTapsThisRound = 0;
     this.cleanRounds = 0;
+    this._helperIdx = 0;
     this.canvas = document.getElementById('game-canvas');
     this.ctx = this.canvas.getContext('2d');
     this.layer = document.getElementById('stage6-layer');
     this.eventsEl = document.getElementById('s6-events');
     this.banner = document.getElementById('s6-banner');
     this.delegateBtn = document.getElementById('s6-delegate');
+    this.rulesEl = document.getElementById('s6-rules');
+    this.legendEl = document.getElementById('s6-legend');
+    if (this.legendEl) this.legendEl.style.display = 'none';
     this.layer.style.display = 'block';
     this.bind.on(this.delegateBtn, 'click', () => this._delegate());
+    if (this.rulesEl) {
+      this.rulesEl.querySelector('#s6-rules-list').innerHTML = STAGE6_TEXT.rules.map(r => '<li>' + r + '</li>').join('');
+      this.bind.on(this.rulesEl.querySelector('#s6-rules-ok'), 'click', () => { this.rulesEl.style.display = 'none'; });
+    }
     SFX.motif('hades');
     this._updateHud();
     this.game.dialogue.show(STAGE6_TEXT.intro, () => this._demo());
@@ -1670,8 +1715,17 @@ class Stage6Scene extends Scene {
     this._updateHud();
     this.game.dialogue.show(STAGE6_TEXT.demo, () => {
       this.game.state.flags.stage6DemoComplete = true;
+      this._showRules();
       this._startRound(1);
     });
+  }
+
+  _showRules() {
+    this.game.state.flags.stage6RulesShown = true;
+    if (this.legendEl) this.legendEl.style.display = 'flex';
+    if (!this.rulesEl) return;
+    this.rulesEl.style.display = 'flex';
+    this.bind.timeout(() => { if (this.rulesEl) this.rulesEl.style.display = 'none'; }, 5200);  // auto-hide
   }
 
   _startRound(r) {
@@ -1700,9 +1754,11 @@ class Stage6Scene extends Scene {
     const def = STAGE6_EVENTS[ev.type];
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 's6-event pri-' + ev.pri + (this._assist() ? '' : ' challenge');  // Challenge: subtler cues
+    const delegable = (ev.pri === 'high' || ev.pri === 'med');
+    b.className = 's6-event pri-' + ev.pri + (delegable ? ' can-delegate' : '') + (this._assist() ? '' : ' challenge');  // Challenge: subtler cues
     b.setAttribute('data-type', ev.type);
     b.setAttribute('data-pri', ev.pri);
+    b.setAttribute('data-delegable', delegable ? '1' : '0');
     b.style.left = S6_SLOTS[ev.slot][0] + '%';
     b.style.top = S6_SLOTS[ev.slot][1] + '%';
     b.innerHTML = '<span class="s6-ev-icon">' + def.icon + '</span><span class="s6-ev-label">' + def.label + '</span>';
@@ -1716,8 +1772,8 @@ class Stage6Scene extends Scene {
     if (this.active.indexOf(ev) < 0) return false;
     if (ev.pri === 'high') { this.happiness += 20; SFX.cheer(); }
     else if (ev.pri === 'med') { this.happiness += 10; SFX.tap(); }
-    else if (ev.pri === 'low') { this.composure -= (this._assist() ? 18 : 24); this.junkTaps++; this.junkTapsThisRound++; SFX.boof(); }  // reacted to junk
-    else if (ev.pri === 'rest') { this.composure = Math.min(100, this.composure + 22); SFX.purr(); }  // strategic rest
+    else if (ev.pri === 'low') { this.composure -= (this._assist() ? 18 : 24); this.junkTaps++; this.junkTapsThisRound++; SFX.boof(); SFX.sigh(); this._banner(STAGE6_TEXT.junkTap, 950); }  // reacted to junk
+    else if (ev.pri === 'rest') { this.composure = Math.min(100, this.composure + 22); SFX.purr(); this._banner(STAGE6_TEXT.rest, 900); }  // strategic rest
     this.composure = Math.max(0, Math.min(100, this.composure));
     this._removeEl(ev);
     this._updateHud();
@@ -1738,12 +1794,14 @@ class Stage6Scene extends Scene {
   _delegate(ev) {
     if (this.delegatesLeft <= 0 || this.phase !== 'round') return false;
     const target = ev || this.active.find(e => e.pri === 'high' || e.pri === 'med');
-    if (!target) return false;
+    if (!target) { this._banner(STAGE6_TEXT.noDelegate, 1000); return false; }  // don't waste a use
     this.delegatesLeft -= 1;
     this.delegatesUsed += 1;
     this.game.state.flags.stage6DelegatedTask = true;
     this.happiness += (target.pri === 'high' ? 20 : 10);
-    SFX.slowBlink();
+    SFX.slowBlink(); SFX.cheer();
+    this.lastDelegateMsg = STAGE6_TEXT.helpers[this._helperIdx++ % STAGE6_TEXT.helpers.length];
+    this._banner(this.lastDelegateMsg, 1100);     // visible helper response
     this._removeEl(target);
     this._updateHud();
     this._checkRound();
@@ -1823,6 +1881,9 @@ class Stage6Scene extends Scene {
       demoComplete: !!this.game.state.flags.stage6DemoComplete,
       junkTaps: this.junkTaps, junkTapsThisRound: this.junkTapsThisRound,
       composureResets: this.composureResets, delegatesUsed: this.delegatesUsed, cleanRounds: this.cleanRounds,
+      rulesShown: !!this.game.state.flags.stage6RulesShown,
+      lastDelegateMsg: this.lastDelegateMsg || null,
+      delegableActive: this.active.filter(e => e.pri === 'high' || e.pri === 'med').length,
     };
   }
   spawnEvent(type) { if (!STAGE6_EVENTS[type] || this.phase !== 'round') return false; return this._spawnType(type).type; }
@@ -1864,6 +1925,8 @@ class Stage6Scene extends Scene {
   exit() {
     this.layer.style.display = 'none';
     this.banner.style.display = 'none';
+    if (this.rulesEl) this.rulesEl.style.display = 'none';
+    if (this.legendEl) this.legendEl.style.display = 'none';
     this._clearActive();
     if (this.ctx) this.ctx.clearRect(0, 0, GW, GH);
     this.game.dialogue.hide();
@@ -1911,10 +1974,10 @@ const STAGE7_TEXT = {
   tableau: [
     { speaker: 'Hades', text: '…He found it. About time.' },
   ],
-  prompt: 'Be Merlin. Make the boys happy. 🧡',
+  prompt: 'Help the boys laugh — fill the room with Joy. 🧡',
 };
 
-// Two simple, warm kid figures (the boys) — generic and affectionate.
+// Three simple, warm kid figures (the boys) — generic and affectionate.
 function drawKid(g, x, y, shirt, skin, hair) {
   g.fill('#000000', 0.12); g.ellipse(x, y + 54, 38, 9);
   g.fill(shirt, 1); g.rrect(x - 15, y + 16, 30, 30, 7);            // body
@@ -1926,11 +1989,14 @@ function drawKid(g, x, y, shirt, skin, hair) {
   g.fill('#b5654a', 1); g.rrect(x - 5, y + 8, 10, 2.4, 1.2);       // happy smile
   g.fill('#ffffff', 1); g.circle(x - 6.7, y + 0.3, 0.8); g.circle(x + 5.3, y + 0.3, 0.8);
 }
+// Nick has three kids — three boys in the finale.
 function drawBoys(ctx) {
   const g = pen(ctx);
-  drawKid(g, 250, 392, '#5a8fd6', '#f3c9a0', '#3a2a18');
-  drawKid(g, 320, 410, '#e07a4a', '#eebb92', '#5a3a20');
+  drawKid(g, 226, 384, '#5a8fd6', '#f3c9a0', '#3a2a18');   // oldest
+  drawKid(g, 292, 400, '#e07a4a', '#eebb92', '#5a3a20');   // middle
+  drawKid(g, 348, 420, '#5bb87a', '#f0c79a', '#2a1c10');   // littlest
 }
+const STAGE7_BOY_COUNT = 3;
 
 // Golden-hour home — warm amber wash, low sun, cozy rug.
 function drawHomeGolden(ctx) {
@@ -1979,20 +2045,25 @@ class Stage7Scene extends Scene {
   _beginPlay() {
     this.phase = 'play';
     document.getElementById('s7-callbacks').style.display = 'flex';
-    this.interEl.innerHTML = '';
-    STAGE7_INTERACTIONS.forEach(it => {
-      const b = document.createElement('button');
-      b.type = 'button'; b.className = 's7-inter'; b.setAttribute('data-id', it.id);
-      b.textContent = it.label;
-      this.bind.on(b, 'click', () => this._doInteraction(it.id));
-      this.interEl.appendChild(b);
-    });
     this.interEl.style.display = 'flex';
     this._banner();
+    this._renderCurrent();          // present ONE warm action at a time (no crowded panel)
   }
   _banner() {
     const p = document.getElementById('s7-prompt');
     if (p) p.textContent = STAGE7_TEXT.prompt;
+  }
+
+  // Show only the next not-yet-done interaction as a single big card.
+  _renderCurrent() {
+    this.interEl.innerHTML = '';
+    const it = STAGE7_INTERACTIONS.find(i => !this.done.has(i.id));
+    if (!it) return;
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 's7-inter'; b.setAttribute('data-id', it.id);
+    b.textContent = it.label;
+    this.bind.on(b, 'click', () => this._doInteraction(it.id));
+    this.interEl.appendChild(b);
   }
 
   _doInteraction(id) {
@@ -2007,10 +2078,9 @@ class Stage7Scene extends Scene {
       const chip = document.querySelector('#s7-callbacks .s7-cb[data-cb="' + it.cb + '"]');
       if (chip) chip.classList.add('done');
     }
-    const btn = this.interEl.querySelector('.s7-inter[data-id="' + id + '"]');
-    if (btn) { btn.disabled = true; btn.classList.add('done'); }
     this._updateJoy();
     if (this.done.size >= STAGE7_INTERACTIONS.length) this._onJoyFull();
+    else this._renderCurrent();                  // advance to the next single action
     return true;
   }
 
@@ -2076,6 +2146,8 @@ class Stage7Scene extends Scene {
       comedySuppressed: this.realizing,
       interactionsLeft: STAGE7_INTERACTIONS.filter(i => !this.done.has(i.id)).map(i => i.id),
       done: Array.from(this.done),
+      boyCount: STAGE7_BOY_COUNT,
+      visibleInteractions: this.interEl ? this.interEl.querySelectorAll('.s7-inter').length : 0,
     };
   }
   doInteraction(id) { return this._doInteraction(id); }

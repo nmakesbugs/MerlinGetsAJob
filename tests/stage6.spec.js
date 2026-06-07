@@ -174,3 +174,54 @@ test('Challenge mode renders subtler event cues', async ({ page }) => {
   await page.evaluate(() => window.__merlinGame.debug.stage6SpawnEvent('boys-need'));
   expect(await page.locator('.s6-event.challenge').count()).toBeGreaterThan(0);
 });
+
+// ═══════════════════════════════════════════════════════════
+// 0.81 Polish — clarity: rules panel, event coding, Delegate feedback.
+// ═══════════════════════════════════════════════════════════
+test('the How to Manage rules panel and legend appear at round start', async ({ page }) => {
+  await enterRound1(page);
+  expect((await s6(page)).rulesShown).toBe(true);
+  await expect(page.locator('#s6-rules')).toBeVisible();
+  await expect(page.locator('#s6-rules')).toContainText('Do not tap everything');
+  await expect(page.locator('#s6-legend')).toBeVisible();
+});
+
+test('high-priority and junk events are visually distinguishable', async ({ page }) => {
+  await enterRound1(page);
+  await page.evaluate(() => window.__merlinGame.debug.stage6SpawnEvent('boys-need'));
+  const high = page.locator('.s6-event[data-type="boys-need"]').first();
+  await expect(high).toHaveClass(/pri-high/);
+  await expect(high).toHaveClass(/can-delegate/);          // delegate-eligible cue
+  await page.evaluate(() => window.__merlinGame.debug.stage6SpawnEvent('leaf'));
+  await expect(page.locator('.s6-event[data-type="leaf"]').first()).toHaveClass(/pri-low/);  // dim/dashed junk
+});
+
+test('Delegate resolves an eligible task with a visible helper response', async ({ page }) => {
+  await enterRound1(page);
+  await page.evaluate(() => window.__merlinGame.debug.stage6SpawnEvent('empty-bowl'));
+  const before = (await s6(page)).delegatesLeft;
+  expect(await page.evaluate(() => window.__merlinGame.debug.stage6DelegateEvent('empty-bowl'))).toBe(true);
+  const st = await s6(page);
+  expect(st.delegatesLeft).toBe(before - 1);
+  expect(st.lastDelegateMsg).toBeTruthy();                 // "Chinook handled it!" etc.
+  await expect(page.locator('.s6-event[data-type="empty-bowl"]')).toHaveCount(0);  // the task was resolved/removed
+  expect((await flags(page)).stage6DelegatedTask).toBe(true);
+  await expect(page.locator('#s6-banner')).toBeVisible();
+});
+
+test('tapping junk shows feedback and drains Composure', async ({ page }) => {
+  await enterRound1(page);
+  const before = (await s6(page)).composure;
+  await page.evaluate(() => window.__merlinGame.debug.stage6HandleEvent('leaf'));
+  expect((await s6(page)).composure).toBeLessThan(before);
+  await expect(page.locator('#s6-banner')).toContainText(/junk/i);
+});
+
+test('sunbeam shows feedback and restores Composure', async ({ page }) => {
+  await enterRound1(page);
+  await page.evaluate(() => window.__merlinGame.debug.stage6HandleEvent('leaf'));   // spend some first
+  const before = (await s6(page)).composure;
+  await page.evaluate(() => window.__merlinGame.debug.stage6HandleEvent('sunbeam'));
+  expect((await s6(page)).composure).toBeGreaterThan(before);
+  await expect(page.locator('#s6-banner')).toContainText(/rest/i);
+});
