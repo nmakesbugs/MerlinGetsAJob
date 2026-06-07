@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=0.3">
+<link rel="stylesheet" href="style.css?v=0.5">
 </head>
 <body data-accent="home" data-stage="title">
 
@@ -104,6 +104,39 @@
         </div>
       </div>
 
+      <!-- Stage 3 interactive layer (family-safe side-view fighter). -->
+      <div id="stage3-layer" style="display:none">
+        <div id="s3-meters">
+          <div class="s3-meter"><span class="s3-meter-label">Pep</span><div class="s3-bar"><div id="s3-pep-fill"></div></div></div>
+          <div class="s3-meter"><span class="s3-meter-label">Teamwork</span><div class="s3-bar team"><div id="s3-team-fill"></div></div></div>
+        </div>
+        <div id="s3-foe-name"></div>
+        <div id="s3-telegraph" style="display:none">❗ Winding up!</div>
+        <div id="s3-banner" style="display:none"></div>
+        <div id="s3-assists">
+          <button id="s3-boof" class="s3-assist" type="button" data-assist="boof">🐶 Boof Bark</button>
+          <button id="s3-trip" class="s3-assist" type="button" data-assist="trip">🌀 Tail Trip</button>
+          <button id="s3-wiggle" class="s3-assist" type="button" data-assist="wiggle">✨ Wiggle</button>
+          <button id="s3-finish" class="s3-finisher" type="button" data-assist="finish" style="display:none">⭐ Boof &amp; Bound!</button>
+        </div>
+      </div>
+
+      <!-- Stage 4 interactive layer (family-safe spot-and-tap gallery). -->
+      <div id="stage4-layer" style="display:none">
+        <div id="s4-hud">
+          <span id="s4-wave">Wave 1</span>
+          <span id="s4-score">Score 0</span>
+          <span id="s4-combo">Combo 0</span>
+        </div>
+        <div id="s4-bigsniff">
+          <span class="s4-bs-label">Big Sniff</span>
+          <div class="s4-bar"><div id="s4-bigsniff-fill"></div></div>
+        </div>
+        <div id="s4-telegraph" style="display:none">👃 Chinook points…</div>
+        <div id="s4-field"></div>
+        <div id="s4-banner" style="display:none"></div>
+      </div>
+
       <!-- Shared dialogue box (used from Stage 1 onward). -->
       <div id="dialogue-box" style="display:none">
         <div class="dlg-speaker" id="dlg-speaker"></div>
@@ -115,6 +148,6 @@
   </div><!-- #game-frame -->
 </div><!-- #viewport -->
 
-<script src="game.js?v=0.3"></script>
+<script src="game.js?v=0.5"></script>
 </body>
 </html>

@@ -16,7 +16,35 @@ See the design docs for the full vision: [`DESIGN_BIBLE.md`](DESIGN_BIBLE.md),
 
 ## Status
 
-### Milestone 2 — Stage 2: "Ila's Working Dog Academy" ✅ (current)
+### Milestone 4 — Stage 4: "Chinook's Big Sniff" ✅ (current)
+
+A family-safe Duck-Hunt-style spot-and-tap gallery — **not shooting**. **Chinook** (a sweet,
+droopy 6-month-old bloodhound) **points**; you tap what he found.
+
+- Chinook points (telegraph) → a target spawns → tap it: **ducks flap away happy**, **clay/foam
+  discs puff harmlessly**. No weapons, no shooting, nothing is hurt.
+- Playful **decoys** (butterfly, neighbor's hat, a Hades sunbathing cameo) reset combo with a
+  funny scold — never a fail or dead-end.
+- 3 waves, lightweight **score + combo**, and a **Big Sniff** meter that fills and triggers a
+  bonus (double points). Spawns are **deterministic under `state.rngSeed`**.
+- Flags `stage4Wave{1,2,3}Complete`, `stage4BigSniffTriggered`, `stage4Complete`; hands off to
+  `stage5-birddog`. Assist mode cannot dead-end.
+
+### Milestone 3 — Stage 3: "Ila Fight Scene" ✅
+
+A family-safe side-view "fighter" (Tekken/MK energy, zero violence). **Ila** anchors; the player
+times **Merlin's assists** to fill a **Teamwork** meter and trigger a finisher.
+
+- Three assists: **Boof Bark**, **Tail Trip**, **Distraction Wiggle** (cooldowns, fill Teamwork;
+  interrupting an opponent's "winding up!" telegraph gives a bonus).
+- **Teamwork** fills → the **Boof & Bound!** finisher → the opponent **bonks, sees stars, drops
+  loot, and scampers off**. No KO, no blood, no death.
+- Three cartoon troublemakers: Garbage Goblin, Mischief Gremlin, The Mailman's Nemesis.
+- The resource is **Pep**, not health — reaching zero is a comedy tumble + same-opponent retry,
+  never a game-over. Assist mode cannot dead-end.
+- Flags `stage3Opponent{1,2,3}Complete` + `stage3Complete`; hands off to `stage4-sniff`.
+
+### Milestone 2 — Stage 2: "Ila's Working Dog Academy" ✅
 
 Merlin's first apprenticeship: three short, distinct IGP-inspired drills under **Ila**, a
 code-drawn black-and-tan working-line German Shepherd (tan points, upright ears, calm steady
@@ -106,6 +134,14 @@ The test config (`tests/playwright.config.js`) auto-starts a static server on po
   the three drills completing and setting its flag, control rewarding **release on "Out!"**
   (and holding giving a redo, not completion), full Assist auto-play → Stage 3, and a
   family-safe / control-focused content guardrail.
+- `tests/stage3.spec.js` — Stage 3 real content, direct entry, Ila & Merlin present, cartoon
+  opponent names, each assist filling Teamwork, the finisher's **stars-flee**, **Pep**-zero
+  retry (not game-over), full Assist auto-play through all opponents → Stage 4, and a
+  family-safe guardrail (Pep not health, flee not injury).
+- `tests/stage4.spec.js` — Stage 4 real content, direct entry, Chinook identified + a canvas
+  sanity check, point-before-target telegraph, duck **fly-off** / clay **puff**, non-failing
+  decoys, score/combo, the Big Sniff bonus, **deterministic spawns under `rngSeed`**, full
+  Assist auto-play through all waves → Stage 5, and a family-safe guardrail (no shooting).
 
 > Note: clickable elements use `box-shadow`-only glow pulses (never animated `transform`), and
 > tests advance via debug hooks (`drainDialogue`, `stage2AutoPlayDrill`) rather than

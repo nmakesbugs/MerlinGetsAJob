@@ -285,8 +285,111 @@ body[data-accent="hades"]   { --accent: #8a5fc0; --accent-deep: #4a2f80; }
 .s2-ctrl-btn.hold { color: var(--accent-deep); background: #fff; border: 2px solid var(--accent); }
 .s2-ctrl-btn:active { transform: translateY(2px); }
 
+/* ================================================================
+   STAGE 3 — Ila Fight Scene (family-safe side-view fighter)
+   ================================================================ */
+#stage3-layer { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+#stage3-layer > * { pointer-events: auto; }
+
+/* Pep + Teamwork meters */
+#s3-meters { position: absolute; top: 42px; left: 14px; right: 14px; display: flex; flex-direction: column; gap: 6px; }
+.s3-meter { display: flex; align-items: center; gap: 8px; }
+.s3-meter-label { font-weight: 800; font-size: 12px; color: var(--accent-deep); width: 64px; }
+.s3-bar { flex: 1; height: 12px; background: rgba(43,58,85,.18); border-radius: 999px; overflow: hidden; }
+#s3-pep-fill { height: 100%; width: 100%; background: #e0703a; border-radius: 999px; transition: width .2s ease; }
+#s3-team-fill { height: 100%; width: 0%; background: var(--accent-deep); border-radius: 999px; transition: width .2s ease; }
+
+/* Opponent name + telegraph + banner */
+#s3-foe-name {
+  position: absolute; top: 92px; left: 0; right: 0; text-align: center;
+  font-family: 'Fredoka One','Nunito',cursive; font-size: 22px; color: var(--accent-deep);
+}
+#s3-telegraph {
+  position: absolute; top: 130px; left: 50%; transform: translateX(-50%);
+  font-weight: 800; font-size: 15px; color: #fff; background: #e0703a;
+  padding: 5px 12px; border-radius: 999px;
+}
+#s3-banner {
+  position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%);
+  font-family: 'Fredoka One','Nunito',cursive; font-size: 26px; color: var(--accent-deep);
+  background: var(--paper); border: 3px solid var(--accent-deep); border-radius: 16px;
+  padding: 14px 22px; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,.3);
+}
+
+/* Assist controls */
+#s3-assists {
+  position: absolute; left: 14px; right: 14px; bottom: 18px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+}
+.s3-assist {
+  font-family: 'Nunito',sans-serif; font-weight: 800; font-size: 14px; color: #fff;
+  background: var(--accent-deep); border: none; padding: 14px 6px; border-radius: 14px;
+  cursor: pointer; box-shadow: 0 4px 0 #1c2840;
+}
+.s3-assist:active { transform: translateY(2px); box-shadow: 0 2px 0 #1c2840; }
+.s3-assist:disabled { opacity: .4; box-shadow: 0 2px 0 #1c2840; cursor: default; }
+.s3-finisher {
+  grid-column: 1 / -1;
+  font-family: 'Fredoka One','Nunito',cursive; font-size: 20px; color: #fff;
+  background: var(--accent); border: none; padding: 14px; border-radius: 14px; cursor: pointer;
+}
+/* box-shadow-only pulse (no transform) so the button stays clickable */
+.s3-finisher.ready { animation: finishGlow 1s ease-in-out infinite; }
+@keyframes finishGlow {
+  0%,100% { box-shadow: 0 0 4px 1px rgba(240,165,0,.4); }
+  50%     { box-shadow: 0 0 22px 9px rgba(240,165,0,.8); }
+}
+
+/* ================================================================
+   STAGE 4 — Chinook's Big Sniff (spot-and-tap gallery)
+   ================================================================ */
+#stage4-layer { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+#stage4-layer > * { pointer-events: auto; }
+#s4-field { position: absolute; inset: 0; pointer-events: none; }
+#s4-field > * { pointer-events: auto; }
+
+#s4-hud {
+  position: absolute; top: 44px; left: 12px; right: 12px;
+  display: flex; justify-content: space-between;
+  font-weight: 800; font-size: 13px; color: var(--accent-deep);
+}
+#s4-bigsniff { position: absolute; top: 70px; left: 12px; right: 12px; display: flex; align-items: center; gap: 8px; }
+.s4-bs-label { font-weight: 800; font-size: 12px; color: var(--accent-deep); width: 70px; }
+#s4-bigsniff .s4-bar { flex: 1; height: 11px; background: rgba(138,61,24,.18); border-radius: 999px; overflow: hidden; }
+#s4-bigsniff-fill { height: 100%; width: 0%; background: var(--accent-deep); border-radius: 999px; transition: width .2s ease; }
+
+#s4-telegraph {
+  position: absolute; top: 100px; left: 50%; transform: translateX(-50%);
+  font-weight: 800; font-size: 14px; color: #fff; background: var(--accent-deep);
+  padding: 5px 14px; border-radius: 999px;
+}
+#s4-banner {
+  position: absolute; top: 44%; left: 50%; transform: translate(-50%, -50%);
+  font-family: 'Fredoka One','Nunito',cursive; font-size: 24px; color: var(--accent-deep);
+  background: var(--paper); border: 3px solid var(--accent-deep); border-radius: 16px;
+  padding: 12px 20px; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,.3); max-width: 320px;
+}
+
+/* Tap targets (ducks / discs / decoys) */
+.s4-target {
+  position: absolute; transform: translate(-50%, -50%);
+  width: 60px; height: 60px; border-radius: 50%;
+  border: none; background: rgba(255,255,255,.55); cursor: pointer;
+  font-size: 38px; line-height: 56px; text-align: center; padding: 0;
+}
+/* box-shadow-only pulse keeps the bounding box stable (clickable in tests) */
+.s4-target.primary { animation: s4glow 1s ease-in-out infinite; }
+@keyframes s4glow {
+  0%,100% { box-shadow: 0 0 4px 1px rgba(196,98,45,.35); }
+  50%     { box-shadow: 0 0 20px 8px rgba(196,98,45,.7); }
+}
+.s4-target.decoy { background: rgba(255,255,255,.35); }
+.s4-target.flyoff { transition: transform .35s ease, opacity .35s ease; transform: translate(-50%, -180%) rotate(12deg); opacity: 0; }
+.s4-target.puff { transition: transform .3s ease, opacity .3s ease; transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+.s4-target.gone { transition: opacity .25s ease; opacity: 0; }
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .big-btn, .mentor-card { transition: none; }
-  #glow-bowl, #stage1-hint, .s2-dot.next { animation: none; }
+  #glow-bowl, #stage1-hint, .s2-dot.next, .s3-finisher.ready, .s4-target.primary { animation: none; }
 }

@@ -189,6 +189,7 @@ function pen(ctx) {
     circle(x, y, r) { ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fill(); },
     // Phaser fillEllipse uses full width/height; convert to radii.
     ellipse(x, y, w, h) { ctx.beginPath(); ctx.ellipse(x, y, w / 2, h / 2, 0, 0, 6.2832); ctx.fill(); },
+    tri(x1, y1, x2, y2, x3, y3) { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.closePath(); ctx.fill(); },
   };
 }
 
@@ -677,6 +678,548 @@ class Stage2Scene extends Scene {
   }
 }
 
+/* ================================================================
+   STAGE 3 — Ila Fight Scene (family-safe side-view "fighter").
+   Ila anchors; the player times Merlin's assists to fill a Teamwork
+   meter and trigger a finisher. Opponents are cartoon troublemakers
+   who bonk → see stars → drop loot → flee. No injury, no KO, no death.
+   The resource is "Pep" (zero = a funny tumble + retry, never game over).
+   ================================================================ */
+const STAGE3_OPPONENTS = [
+  { id: 1, name: 'Garbage Goblin', color: '#7fae4b', prop: '🍌', intro: 'Garbage Goblin is tipping the bins again!' },
+  { id: 2, name: 'Mischief Gremlin', color: '#9b6fc0', prop: '👟', intro: 'Mischief Gremlin swiped a shoe!' },
+  { id: 3, name: "The Mailman's Nemesis", color: '#8a8f98', prop: '🗑️', intro: "The Mailman's Nemesis tipped the trash everywhere!" },
+];
+const STAGE3_TEXT = {
+  intro: [
+    { speaker: 'Ila', text: 'We do not act because we are angry. We protect because we are needed.' },
+    { speaker: 'Ila', text: 'Stay beside me. Watch. Wait. Help at the right moment.' },
+    { speaker: 'Merlin', text: 'I shall unleash my most powerful technique: the Boof.' },
+    { speaker: 'Ila', text: '...Use it well.' },
+  ],
+  outro: [
+    { speaker: 'Merlin', text: 'Did we just… do a job? Was that a job?!' },
+    { speaker: 'Ila', text: 'That was teamwork. Yours was the easy part.' },
+    { speaker: 'Ila', text: 'You watched, waited, and helped at the right moment. You did it well.' },
+    { speaker: 'Merlin', text: 'Excellent. I am proud. Also tired.' },
+  ],
+  flee: 'They scampered off! ⭐',
+  pepOut: 'Oof! Merlin takes a tumble. Shake it off and try again!',
+  telegraph: '❗ Winding up!',
+};
+const ASSIST_GAIN = { boof: 34, trip: 34, wiggle: 40 };
+
+// A round, googly-eyed cartoon troublemaker — silly, never scary.
+function drawOpponent(ctx, color) {
+  const g = pen(ctx);
+  g.fill('#000000', 0.15); g.ellipse(40, 98, 70, 12);
+  g.fill(color, 1); g.ellipse(40, 60, 64, 74);
+  g.fill(color, 1); g.rrect(22, 92, 12, 16, 4); g.rrect(46, 92, 12, 16, 4);
+  g.fill(color, 1); g.ellipse(6, 58, 16, 30); g.ellipse(74, 58, 16, 30);
+  g.fill('#ffffff', 0.18); g.ellipse(40, 68, 40, 46);
+  g.fill('#ffffff', 1); g.circle(28, 48, 11); g.circle(54, 48, 11);
+  g.fill('#222222', 1); g.circle(30, 50, 5); g.circle(56, 50, 5);
+  g.fill('#000000', 0.55); g.rect(18, 33, 18, 4); g.rect(46, 33, 18, 4);   // comic brows
+  g.fill('#5a3a2a', 1); g.rrect(28, 72, 24, 7, 3);                          // goofy mouth
+  g.fill('#ffffff', 1); g.rect(32, 72, 4, 4); g.rect(44, 72, 4, 4);        // two silly teeth
+  ctx.globalAlpha = 1;
+}
+
+// Neighborhood yard: sky, grass, a little house, a fence.
+function drawYard(ctx) {
+  const g = pen(ctx);
+  g.fill('#bfe3f2', 1); g.rect(0, 0, GW, 330);
+  g.fill('#fff1a8', 1); g.circle(330, 64, 24);
+  g.fill('#cfe8a0', 1); g.rect(0, 330, GW, GH - 330);
+  g.fill('#b7d684', 1); g.ellipse(195, 470, 380, 80);
+  g.fill('#e8d6b0', 1); g.rect(24, 200, 150, 110);          // house
+  g.fill('#b9543f', 1); g.tri(14, 202, 184, 202, 99, 150);  // roof
+  g.fill('#7a5a36', 1); g.rect(74, 252, 30, 58);            // door
+  g.fill('#9fd0e8', 1); g.rect(124, 226, 30, 28);           // window
+  for (let x = 212; x < GW; x += 26) { g.fill('#caa472', 1); g.rect(x, 252, 9, 58); }
+  g.fill('#caa472', 1); g.rect(206, 264, GW - 206, 8);      // fence rail
+  ctx.globalAlpha = 1;
+}
+
+class Stage3Scene extends Scene {
+  enter() {
+    this.game.setAccent('ila');
+    this.game.setHud('Stage 3');
+    this.game.state.flags.stage3Started = true;
+    this.t = 0;
+    this.oppIndex = -1;
+    this.opp = null;
+    this.pep = 100;
+    this.teamwork = 0;
+    this.cool = { boof: 0, trip: 0, wiggle: 0 };
+    this.fighting = false;
+    this.fleeing = false;
+    this.telegraph = 0;
+    this.attackTimer = 0;
+    this._fleeToken = 0;
+    this._fleeStart = 0;
+    this.canvas = document.getElementById('game-canvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.layer = document.getElementById('stage3-layer');
+    this.layer.style.display = 'block';
+    this.pepFill = document.getElementById('s3-pep-fill');
+    this.teamFill = document.getElementById('s3-team-fill');
+    this.foeName = document.getElementById('s3-foe-name');
+    this.telegraphEl = document.getElementById('s3-telegraph');
+    this.banner = document.getElementById('s3-banner');
+    this.finishBtn = document.getElementById('s3-finish');
+    this.btn = {
+      boof: document.getElementById('s3-boof'),
+      trip: document.getElementById('s3-trip'),
+      wiggle: document.getElementById('s3-wiggle'),
+    };
+    this.bind.on(this.btn.boof, 'click', () => this._useAssist('boof'));
+    this.bind.on(this.btn.trip, 'click', () => this._useAssist('trip'));
+    this.bind.on(this.btn.wiggle, 'click', () => this._useAssist('wiggle'));
+    this.bind.on(this.finishBtn, 'click', () => { if (this._finisher()) { /* real timer handles progression */ } });
+    this._updateMeters();
+    SFX.motif('ila');
+    this.game.dialogue.show(STAGE3_TEXT.intro, () => this._startOpponent(0));
+  }
+
+  _assist() { return this.game.state.assistMode; }
+  _updateMeters() {
+    this.pepFill.style.width = Math.max(0, this.pep) + '%';
+    this.teamFill.style.width = Math.min(100, this.teamwork) + '%';
+  }
+  _showFinisher(on) {
+    this.finishBtn.style.display = on ? 'block' : 'none';
+    this.finishBtn.classList.toggle('ready', !!on);
+  }
+
+  _startOpponent(i) {
+    this.oppIndex = i;
+    this.opp = STAGE3_OPPONENTS[i];
+    this.opp.state = 'fighting';
+    this.pep = 100;
+    this.teamwork = 0;
+    this.cool = { boof: 0, trip: 0, wiggle: 0 };
+    this.fighting = true;
+    this.fleeing = false;
+    this.telegraph = 0;
+    this.attackTimer = this._assist() ? 5200 : 3600;
+    this.foeName.textContent = this.opp.name + '  ' + this.opp.prop;
+    this.telegraphEl.style.display = 'none';
+    this._showFinisher(false);
+    this._updateMeters();
+    this.game.dialogue.show([{ speaker: 'Narrator', text: this.opp.intro }]);
+  }
+
+  _useAssist(id, force) {
+    if (!this.fighting || this.fleeing) return false;
+    if (!force && this.cool[id] > 0) return false;
+    this.cool[id] = this._assist() ? 250 : 700;
+    if (id === 'boof') SFX.boof(); else if (id === 'trip') SFX.bonk(); else SFX.tap();
+    let gain = ASSIST_GAIN[id];
+    if (this.telegraph > 0) { this.telegraph = 0; this.telegraphEl.style.display = 'none'; gain += 12; SFX.star(); }
+    this.teamwork = Math.min(100, this.teamwork + gain);
+    this._updateMeters();
+    if (this.teamwork >= 100) this._showFinisher(true);
+    return true;
+  }
+
+  _fillTeamwork() { this.teamwork = 100; this._updateMeters(); this._showFinisher(true); return true; }
+
+  _finisher() {
+    if (this.teamwork < 100 || this.fleeing || !this.fighting) return false;
+    this.fighting = false;
+    this.fleeing = true;
+    this.opp.state = 'stars-flee';
+    this._fleeStart = this.t;
+    this.telegraphEl.style.display = 'none';
+    this._showFinisher(false);
+    this.game.state.flags['stage3Opponent' + (this.oppIndex + 1) + 'Complete'] = true;
+    SFX.cheer(); SFX.star();
+    this._banner(STAGE3_TEXT.flee);
+    const tok = ++this._fleeToken;
+    this.bind.timeout(() => { if (tok === this._fleeToken) this._afterFlee(); }, 1300);
+    return true;
+  }
+
+  _afterFlee() {
+    if (!this.fleeing) return;            // already progressed (e.g. by a test hook)
+    this.fleeing = false;
+    this._fleeToken++;                    // invalidate any pending flee timer
+    this._hideBanner();
+    if (this.oppIndex + 1 < STAGE3_OPPONENTS.length) this._startOpponent(this.oppIndex + 1);
+    else this._outro();
+  }
+
+  _attackLands() {
+    this.telegraph = 0;
+    this.telegraphEl.style.display = 'none';
+    this.pep = Math.max(0, this.pep - (this._assist() ? 12 : 22));
+    SFX.bonk();
+    this._updateMeters();
+    if (this.pep <= 0) this._pepOut();
+  }
+
+  _pepOut() {
+    this.fighting = false;
+    SFX.boof();
+    this._banner(STAGE3_TEXT.pepOut);
+    const idx = this.oppIndex;
+    this.bind.timeout(() => { this._hideBanner(); this._startOpponent(idx); }, 1300);
+  }
+
+  _outro() {
+    this.game.state.flags.stage3Complete = true;
+    this.game.state.stars['stage3-fight'] = 3;
+    this.game.dialogue.show(STAGE3_TEXT.outro, () => this.game.goToStage('stage4-sniff'));
+  }
+
+  _banner(text) { this.banner.textContent = text; this.banner.style.display = 'block'; }
+  _hideBanner() { this.banner.style.display = 'none'; }
+
+  update(dt) {
+    this.t += dt;
+    ['boof', 'trip', 'wiggle'].forEach(k => { if (this.cool[k] > 0) this.cool[k] = Math.max(0, this.cool[k] - dt); });
+    ['boof', 'trip', 'wiggle'].forEach(k => { if (this.btn[k]) this.btn[k].disabled = this.cool[k] > 0 || !this.fighting || this.fleeing; });
+    if (!this.fighting || this.fleeing) return;
+    if (this.game.dialogue.box.style.display !== 'none') return;   // pause during dialogue
+    if (this.telegraph > 0) {
+      this.telegraph -= dt;
+      if (this.telegraph <= 0) this._attackLands();
+    } else {
+      this.attackTimer -= dt;
+      if (this.attackTimer <= 0) {
+        this.telegraph = this._assist() ? 1800 : 1000;
+        this.telegraphEl.style.display = 'block';
+        this.attackTimer = this._assist() ? 5200 : 3600;
+      }
+    }
+  }
+
+  render() {
+    if (!this.ctx) return;
+    const ctx = this.ctx, t = this.t;
+    drawYard(ctx);
+    ctx.save(); ctx.translate(2, 332 + Math.sin(t / 500) * 3); ctx.scale(1.25, 1.25); drawMerlin(ctx, Math.sin(t / 200)); ctx.restore();
+    ctx.save(); ctx.translate(98, 326); ctx.scale(1.3, 1.3); drawIla(ctx); ctx.restore();
+    if (this.opp) {
+      const fleeOff = this.fleeing ? Math.min(1, (t - this._fleeStart) / 1300) : 0;
+      const ox = 250 + fleeOff * 230;
+      const wob = this.telegraph > 0 ? Math.sin(t / 55) * 4 : Math.sin(t / 320) * 2;
+      ctx.save(); ctx.translate(ox + wob, 332 - fleeOff * 26); ctx.scale(1.4, 1.4); drawOpponent(ctx, this.opp.color); ctx.restore();
+      ctx.font = '26px serif';
+      if (this.fleeing) { ctx.fillText('✨', ox - 6, 322); ctx.fillText('⭐', ox + 46, 300); ctx.fillText('✨', ox + 96, 330); }
+      else if (this.telegraph > 0) { ctx.fillText('❗', ox + 34, 296); }
+    }
+  }
+
+  // ── Debug/test hooks (call the real production methods) ──
+  getState() {
+    return {
+      opponentIndex: this.oppIndex,
+      opponentName: this.opp ? this.opp.name : null,
+      opponentState: this.opp ? this.opp.state : 'none',
+      pep: this.pep,
+      teamwork: this.teamwork,
+      teamworkFull: this.teamwork >= 100,
+      finisherReady: this.teamwork >= 100 && this.fighting,
+      fighting: this.fighting,
+      fleeing: this.fleeing,
+    };
+  }
+  autoPlay() {
+    let guard = 0;
+    while (this.game.state.currentStage === 'stage3-fight' && guard++ < 40) {
+      if (this.game.dialogue.box.style.display !== 'none') { this.game.dialogue.advance(); continue; }
+      if (this.fighting) { this._fillTeamwork(); this._finisher(); this._afterFlee(); continue; }
+      if (this.fleeing) { this._afterFlee(); continue; }
+      break;
+    }
+    return this.game.state.currentStage;
+  }
+
+  exit() {
+    this.layer.style.display = 'none';
+    this.telegraphEl.style.display = 'none';
+    this._hideBanner();
+    this._showFinisher(false);
+    if (this.ctx) this.ctx.clearRect(0, 0, GW, GH);
+    this.game.dialogue.hide();
+    super.exit();
+  }
+}
+
+/* ================================================================
+   STAGE 4 — Chinook's Big Sniff (family-safe Duck-Hunt-style gallery).
+   Chinook (a 6-month-old bloodhound) POINTS to where a target is; the
+   player taps what he found. Ducks flap away happy; clay/foam discs
+   puff harmlessly. No weapons, no shooting, nothing is hurt. Spawns are
+   deterministic under state.rngSeed.
+   ================================================================ */
+const STAGE4_TEXT = {
+  intro: [
+    { speaker: 'Chinook', text: 'Okay okay okay so the trick is you SMELL it first, THEN you look.' },
+    { speaker: 'Chinook', text: 'Nose, then eyes! Nose, then eyes!' },
+    { speaker: 'Merlin', text: 'I have both of those. This should be easy.' },
+    { speaker: 'Chinook', text: 'Great! Then follow my point!' },
+  ],
+  outro: [
+    { speaker: 'Chinook', text: 'Your nose will get there! Mine took a whole four months.' },
+    { speaker: 'Merlin', text: 'You are six months old.' },
+    { speaker: 'Chinook', text: 'Exactly! Plenty of practice.' },
+    { speaker: 'Merlin', text: 'I respect you deeply and will now stop questioning puppies.' },
+  ],
+  bigSniff: 'BIG SNIFF! 🐽',
+  scold: {
+    butterfly: "That's a butterfly, not a find!",
+    hat: "That's the neighbor's hat!",
+    hades: 'Hades: “Tap me again and you will find new employment.”',
+  },
+  telegraph: '👃 Chinook points…',
+};
+const S4_TARGET = { duck: '🦆', clay: '🥏' };
+const S4_DECOY = { butterfly: '🦋', hat: '🎩', hades: '😼' };
+const S4_WAVE_ROUNDS = [3, 4, 4];
+
+// Bright sky-and-field gallery backdrop.
+function drawSkyField(ctx) {
+  const g = pen(ctx);
+  g.fill('#bfe7f5', 1); g.rect(0, 0, GW, 470);
+  g.fill('#fff3b0', 1); g.circle(62, 68, 30);                      // sun
+  g.fill('#ffffff', 0.9); g.ellipse(160, 92, 86, 30); g.ellipse(214, 104, 92, 34); g.ellipse(310, 72, 74, 26);
+  g.fill('#d8f0c8', 1); g.rect(0, 460, GW, GH - 460);             // grass
+  g.fill('#8fcf6b', 1); g.ellipse(40, 484, 96, 42); g.ellipse(210, 490, 128, 48); g.ellipse(356, 484, 96, 42);
+  g.fill('#7cbe59', 1); g.ellipse(130, 506, 150, 42);
+  ctx.globalAlpha = 1;
+}
+
+// Chinook — droopy, sweet, oversized-pawed bloodhound puppy (faces right).
+function drawChinook(ctx) {
+  const g = pen(ctx);
+  const RUS = '#a0522d', RUS2 = '#8b4a26', CREAM = '#f0e0c8', EARD = '#6a3318', NOSE = '#241712';
+  g.fill('#000000', 0.15); g.ellipse(74, 112, 98, 14);
+  g.fill(EARD, 1); g.ellipse(92, 66, 24, 74); g.ellipse(130, 60, 22, 66);   // long hanging ears (behind)
+  g.fill(RUS, 1);[34, 54, 86, 106].forEach(x => g.rrect(x, 86, 15, 18, 4)); // legs
+  g.fill(CREAM, 1);[32, 52, 84, 104].forEach(x => g.rrect(x, 100, 19, 13, 5)); // big puppy paws
+  g.fill(RUS, 1); g.ellipse(66, 72, 104, 56);                     // body
+  g.fill(CREAM, 1); g.ellipse(100, 84, 42, 30);                   // chest
+  g.fill(RUS, 1); g.ellipse(110, 50, 36, 38);                     // head
+  g.fill(RUS2, 1); g.ellipse(126, 62, 32, 26);                    // droopy jowls
+  g.fill(RUS2, 1); g.ellipse(106, 40, 26, 8); g.ellipse(112, 46, 28, 8);   // brow wrinkles
+  g.fill(NOSE, 1); g.ellipse(142, 58, 16, 12);                    // big nose
+  g.fill('#4a2f22', 1); g.ellipse(142, 55, 8, 4);
+  g.fill('#2a1a10', 1); g.ellipse(102, 45, 8, 9); g.ellipse(116, 43, 8, 9); // droopy eyes
+  g.fill('#ffffff', 1); g.circle(100, 43, 2); g.circle(114, 41, 2);
+  g.fill('#7a3d1f', 1); g.ellipse(88, 56, 15, 44); g.ellipse(132, 52, 14, 40); // front ear flaps
+  ctx.globalAlpha = 1;
+}
+
+class Stage4Scene extends Scene {
+  enter() {
+    this.game.setAccent('chinook');
+    this.game.setHud('Stage 4');
+    this.game.state.flags.stage4Started = true;
+    this.t = 0;
+    this.rng = makeRng(this.game.state.rngSeed || 1);
+    this.wave = 1;
+    this.roundInWave = 0;
+    this.score = 0;
+    this.combo = 0;
+    this.bigSniff = 0;
+    this.bigSniffTriggered = false;
+    this.bigSniffActive = false;
+    this.bigSniffBonusLeft = 0;
+    this.telegraphing = false;
+    this.target = null;
+    this.decoy = null;
+    this.lastResolve = null;
+    this.canvas = document.getElementById('game-canvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.layer = document.getElementById('stage4-layer');
+    this.field = document.getElementById('s4-field');
+    this.telegraphEl = document.getElementById('s4-telegraph');
+    this.banner = document.getElementById('s4-banner');
+    this.layer.style.display = 'block';
+    this._updateHud();
+    SFX.motif('chinook');
+    this.game.dialogue.show(STAGE4_TEXT.intro, () => { this.wave = 1; this.roundInWave = 0; this._beginRound(); });
+  }
+
+  _assist() { return this.game.state.assistMode; }
+  _waveRounds() { return S4_WAVE_ROUNDS[this.wave - 1]; }
+  _updateHud() {
+    document.getElementById('s4-wave').textContent = 'Wave ' + this.wave;
+    document.getElementById('s4-score').textContent = 'Score ' + this.score;
+    document.getElementById('s4-combo').textContent = 'Combo ' + this.combo;
+    document.getElementById('s4-bigsniff-fill').style.width = Math.min(100, this.bigSniff) + '%';
+  }
+  _banner(text, ms) {
+    this.banner.textContent = text; this.banner.style.display = 'block';
+    this.bind.timeout(() => { this.banner.style.display = 'none'; }, ms || 1000);
+  }
+
+  _beginRound() {
+    this.telegraphing = true;
+    this.target = null;
+    this.telegraphEl.style.display = 'block';
+    SFX.sniff();
+    this.bind.timeout(() => this._spawnRound(), this._assist() ? 1100 : 600);
+  }
+
+  _spawnRound() {
+    if (this.target) return;                         // already spawned (e.g. forced by a test hook)
+    this.telegraphing = false;
+    this.telegraphEl.style.display = 'none';
+    const r = this.rng;
+    const kind = r() < 0.5 ? 'duck' : 'clay';
+    const x = Math.round(12 + r() * 64);
+    const y = Math.round(16 + r() * 30);
+    this.target = { kind, x, y, el: null };
+    this._addEl(this.target, true);
+    if (this.wave >= 2 && r() < 0.5) {               // a playful decoy in later waves
+      const dkind = ['butterfly', 'hat', 'hades'][Math.floor(r() * 3)];
+      const dx = Math.round(12 + r() * 64), dy = Math.round(16 + r() * 30);
+      this.decoy = { kind: dkind, x: dx, y: dy, el: null };
+      this._addEl(this.decoy, false);
+    }
+  }
+
+  _addEl(t, primary) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 's4-target' + (primary ? ' primary' : ' decoy');
+    b.setAttribute('data-kind', t.kind);
+    b.setAttribute('data-role', primary ? 'primary' : 'decoy');
+    b.style.left = t.x + '%';
+    b.style.top = t.y + '%';
+    b.textContent = primary ? S4_TARGET[t.kind] : S4_DECOY[t.kind];
+    t.el = b;
+    this.bind.on(b, 'click', () => primary ? this._resolveTarget(t.kind) : this._resolveDecoy(t));
+    this.field.appendChild(b);
+  }
+
+  _removeEl(t, cls) {
+    if (t && t.el) {
+      const el = t.el; el.classList.add(cls); el.disabled = true;
+      this.bind.timeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 360);
+    }
+  }
+  _clearDecoy() { if (this.decoy) { this._removeEl(this.decoy, 'gone'); this.decoy = null; } }
+
+  _resolveTarget(kind) {
+    if (!this.target) return false;
+    const bonus = this.bigSniffActive;
+    this._removeEl(this.target, kind === 'duck' ? 'flyoff' : 'puff');
+    this._clearDecoy();
+    SFX.poof(); SFX.cheer();
+    this.score += bonus ? 20 : 10;
+    this.combo += 1;
+    this.lastResolve = { kind, outcome: kind === 'duck' ? 'fly-off' : 'puff' };
+    this.target = null;
+    if (!this.bigSniffTriggered) {
+      this.bigSniff = Math.min(100, this.bigSniff + 22);
+      if (this.bigSniff >= 100) this._triggerBigSniff();
+    }
+    if (this.bigSniffActive && --this.bigSniffBonusLeft <= 0) this.bigSniffActive = false;
+    this._updateHud();
+    this.roundInWave += 1;
+    if (this.roundInWave >= this._waveRounds()) this._endWave();
+    else this._beginRound();
+    return true;
+  }
+
+  _resolveDecoy(t) {
+    this.combo = 0;
+    this.score = Math.max(0, this.score - 5);
+    this.lastResolve = { kind: t.kind, outcome: 'decoy' };
+    if (t.kind === 'hades') SFX.purr(); else SFX.tap();
+    this._banner(STAGE4_TEXT.scold[t.kind], 900);
+    this._removeEl(t, 'gone');
+    if (this.decoy === t) this.decoy = null;
+    this._updateHud();
+    return true;
+  }
+
+  _triggerBigSniff() {
+    this.bigSniffTriggered = true;
+    this.bigSniffActive = true;
+    this.bigSniffBonusLeft = 2;
+    this.game.state.flags.stage4BigSniffTriggered = true;
+    SFX.cheer();
+    this._banner(STAGE4_TEXT.bigSniff, 1200);
+  }
+
+  _endWave() {
+    this.game.state.flags['stage4Wave' + this.wave + 'Complete'] = true;
+    if (this.wave >= 3) { this._outro(); return; }
+    this.wave += 1;
+    this.roundInWave = 0;
+    this._updateHud();
+    this._beginRound();
+  }
+
+  _outro() {
+    this.game.state.flags.stage4Complete = true;
+    this.game.state.stars['stage4-sniff'] = 3;
+    this.game.dialogue.show(STAGE4_TEXT.outro, () => this.game.goToStage('stage5-birddog'));
+  }
+
+  update(dt) { this.t += dt; }
+
+  render() {
+    if (!this.ctx) return;
+    const ctx = this.ctx, t = this.t;
+    drawSkyField(ctx);
+    ctx.save(); ctx.translate(2, 372 + Math.sin(t / 520) * 3); ctx.scale(1.15, 1.15); drawMerlin(ctx, Math.sin(t / 220)); ctx.restore();
+    ctx.save(); ctx.translate(150, 360 + Math.sin(t / 300) * 3); ctx.scale(1.25, 1.25); drawChinook(ctx); ctx.restore();
+    if (this.telegraphing) {
+      ctx.save(); ctx.strokeStyle = 'rgba(160,82,45,0.5)'; ctx.setLineDash([4, 6]); ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(330, 396); ctx.lineTo(300, 180); ctx.stroke(); ctx.restore();
+    }
+  }
+
+  // ── Debug/test hooks (call the real production methods) ──
+  getState() {
+    return {
+      wave: this.wave,
+      roundInWave: this.roundInWave,
+      score: this.score,
+      combo: this.combo,
+      bigSniff: this.bigSniff,
+      bigSniffFull: this.bigSniff >= 100,
+      bigSniffActive: this.bigSniffActive,
+      telegraphing: this.telegraphing,
+      target: this.target ? { kind: this.target.kind, x: this.target.x, y: this.target.y } : null,
+      decoy: this.decoy ? { kind: this.decoy.kind } : null,
+      lastResolve: this.lastResolve,
+    };
+  }
+  spawnNext() { if (this.telegraphing && !this.target) { this._spawnRound(); return true; } return false; }
+  tapTarget() { return this.target ? this._resolveTarget(this.target.kind) : false; }
+  tapDecoy() { return this.decoy ? this._resolveDecoy(this.decoy) : false; }
+  forceBigSniff() { if (!this.bigSniffTriggered) { this.bigSniff = 100; this._triggerBigSniff(); this._updateHud(); return true; } return false; }
+  forceDecoy(kind) { if (!this.decoy) { this.decoy = { kind: kind || 'butterfly', x: 50, y: 24, el: null }; this._addEl(this.decoy, false); return true; } return false; }
+  autoPlay() {
+    let guard = 0;
+    while (this.game.state.currentStage === 'stage4-sniff' && guard++ < 80) {
+      if (this.game.dialogue.box.style.display !== 'none') { this.game.dialogue.advance(); continue; }
+      if (this.telegraphing && !this.target) { this._spawnRound(); continue; }
+      if (this.target) { this._resolveTarget(this.target.kind); continue; }
+      break;
+    }
+    return this.game.state.currentStage;
+  }
+
+  exit() {
+    this.layer.style.display = 'none';
+    this.telegraphEl.style.display = 'none';
+    this.banner.style.display = 'none';
+    if (this.field) this.field.innerHTML = '';
+    if (this.ctx) this.ctx.clearRect(0, 0, GW, GH);
+    this.game.dialogue.hide();
+    super.exit();
+  }
+}
+
 /* ── Ending scene ── */
 class EndScene extends Scene {
   enter() {
@@ -694,6 +1237,8 @@ class EndScene extends Scene {
 const SCENE_OVERRIDES = {
   'stage1-career-crisis': Stage1Scene,
   'stage2-academy': Stage2Scene,
+  'stage3-fight': Stage3Scene,
+  'stage4-sniff': Stage4Scene,
 };
 
 /* ── Tiny view helpers ── */
@@ -784,6 +1329,40 @@ const game = {
     // Stage 2 hooks (delegate to the live scene; reuse real completion paths).
     stage2GetDrill() { return game.scene && game.scene.getDrillState ? game.scene.getDrillState() : null; },
     stage2AutoPlayDrill() { return game.scene && game.scene.autoPlayDrill ? game.scene.autoPlayDrill() : false; },
+    // Stage 3 hooks (delegate to the live scene; reuse real production methods).
+    stage3GetState() { return game.scene && game.scene.getState ? game.scene.getState() : null; },
+    stage3UseAssist(id) { return game.scene && game.scene._useAssist ? game.scene._useAssist(id, true) : false; },
+    stage3FillTeamwork() { return game.scene && game.scene._fillTeamwork ? game.scene._fillTeamwork() : false; },
+    stage3Finish() { return game.scene && game.scene._finisher ? game.scene._finisher() : false; },
+    stage3AfterFlee() { return game.scene && game.scene._afterFlee ? game.scene._afterFlee() : false; },
+    stage3ForcePepZero() { if (game.scene && game.scene._pepOut && game.scene.fighting) { game.scene.pep = 0; game.scene._pepOut(); return true; } return false; },
+    stage3AutoPlayFight() { return game.scene && game.scene.autoPlay ? game.scene.autoPlay() : null; },
+    // All Stage 3 player-facing strings (for the family-safety guardrail scan).
+    stage3AllText() {
+      const parts = [];
+      STAGE3_TEXT.intro.concat(STAGE3_TEXT.outro).forEach(l => parts.push(l.text));
+      STAGE3_OPPONENTS.forEach(o => { parts.push(o.name, o.intro); });
+      parts.push(STAGE3_TEXT.flee, STAGE3_TEXT.pepOut, STAGE3_TEXT.telegraph,
+        'Boof Bark', 'Tail Trip', 'Distraction Wiggle', 'Boof & Bound', 'Pep', 'Teamwork');
+      return parts.join(' \n ');
+    },
+    // Stage 4 hooks (delegate to the live scene; reuse real production methods).
+    stage4GetState() { return game.scene && game.scene.getState ? game.scene.getState() : null; },
+    stage4SpawnNextTarget() { return game.scene && game.scene.spawnNext ? game.scene.spawnNext() : false; },
+    stage4TapTarget() { return game.scene && game.scene.tapTarget ? game.scene.tapTarget() : false; },
+    stage4TapDecoy() { return game.scene && game.scene.tapDecoy ? game.scene.tapDecoy() : false; },
+    stage4TriggerBigSniff() { return game.scene && game.scene.forceBigSniff ? game.scene.forceBigSniff() : false; },
+    stage4ForceDecoy(kind) { return game.scene && game.scene.forceDecoy ? game.scene.forceDecoy(kind) : false; },
+    stage4AutoPlayGallery() { return game.scene && game.scene.autoPlay ? game.scene.autoPlay() : null; },
+    // All Stage 4 player-facing strings (for the family-safety guardrail scan).
+    stage4AllText() {
+      const parts = [];
+      STAGE4_TEXT.intro.concat(STAGE4_TEXT.outro).forEach(l => parts.push(l.text));
+      parts.push(STAGE4_TEXT.bigSniff, STAGE4_TEXT.telegraph,
+        STAGE4_TEXT.scold.butterfly, STAGE4_TEXT.scold.hat, STAGE4_TEXT.scold.hades,
+        'spot', 'tap', 'find', 'point', 'poof', 'fly off', 'clay puff', 'scent spot');
+      return parts.join(' \n ');
+    },
   },
 };
 window.__merlinGame = game;
@@ -798,7 +1377,9 @@ function fitFrame() {
 let _lastT = 0;
 function loop(t) {
   const dt = _lastT ? t - _lastT : 16; _lastT = t;
-  if (game.scene) { game.scene.update(dt); game.scene.render(); }
+  // One bad frame must never permanently freeze the game loop.
+  try { if (game.scene) { game.scene.update(dt); game.scene.render(); } }
+  catch (e) { if (!loop._warned) { console.error('frame error:', e); loop._warned = true; } }
   requestAnimationFrame(loop);
 }
 
