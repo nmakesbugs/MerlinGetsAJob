@@ -23,7 +23,7 @@ Stack (carried from "Anthony & Merlin's Adventure"): **vanilla JS, single `game.
 
 ## Milestone 2 — Stage 2: Ila's Academy (the "drill" toolkit)
 **Why second:** builds the three reusable minigame primitives — **timed-tap, follow-path/drag, hold-steady** — that Stages 3–6 reuse. Investing here pays off everywhere.
-**Build:** Tracking (follow-path), Obedience (timed-tap on beat), Control-Release (hold-then-release-on-cue). Ila sprite + demo-first pattern. Assist/Challenge profiles wired to `state.assistMode`.
+**Build:** Tracking (follow-path), Obedience (timed-tap on beat), Control-Release (hold-then-release-on-cue). Ila sprite + demo-first pattern. (Assist/Challenge profiles were removed in 0.82 — single warm default mode.)
 **Done when:** Stage 2 acceptance criteria pass; the protection drill rewards release-on-cue (control, not aggression); Assist auto-completes in tests; three drills individually testable.
 
 ## Milestone 3 — Stage 4: Chinook's Big Sniff (reaction/aim primitive)

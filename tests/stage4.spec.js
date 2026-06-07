@@ -25,6 +25,18 @@ async function ensureTarget(page) {
   if (!st.target) { await page.evaluate(() => window.__merlinGame.debug.stage4SpawnNextTarget()); st = await s4(page); }
   return st;
 }
+// Play spawn→tap rounds until we reach the telegraph (point) of a given wave.
+async function playToWaveTelegraph(page, wave) {
+  for (let i = 0; i < 48; i++) {
+    if ((await stage(page)) !== 'stage4-sniff') break;
+    const st = await s4(page);
+    if (st.wave === wave && st.telegraphing && !st.target) return st;
+    if (st.telegraphing && !st.target) { await page.evaluate(() => window.__merlinGame.debug.stage4SpawnNextTarget()); continue; }
+    if (st.target) { await page.evaluate(() => window.__merlinGame.debug.stage4TapTarget()); continue; }
+    await drain(page);
+  }
+  return null;
+}
 // Spawn/tap rounds until a target of `want` kind is tapped; returns its lastResolve.
 async function tapUntilKind(page, want) {
   for (let i = 0; i < 16; i++) {
@@ -273,4 +285,64 @@ test('a target that times out drifts away and the round advances (no fail)', asy
   expect(after.lastResolve.outcome).toBe('timeout');
   expect(await stage(page)).toBe('stage4-sniff');          // never a dead-end
   expect(Boolean((await flags(page)).stage4Complete)).toBe(false);
+});
+
+// ═══════════════════════════════════════════════════════════
+// 0.82.1 — the DOM point marker is obvious on EVERY round; +15% chase.
+// ═══════════════════════════════════════════════════════════
+test('the point marker shows on wave 1 during the telegraph, at the point spot', async ({ page }) => {
+  await enterAndStart(page, 5);
+  const st = await s4(page);
+  expect(st.pointAt).not.toBeNull();
+  expect(st.pointMarkVisible).toBe(true);
+  const mark = page.locator('.s4-point-mark');
+  await expect(mark).toBeVisible();
+  expect(await mark.evaluate(el => el.style.left)).toBe(st.pointAt.x + '%');   // positioned at pointAt
+  expect(await mark.evaluate(el => el.style.top)).toBe(st.pointAt.y + '%');
+});
+
+test('the point marker appears on every wave (1, 2, 3), not just Big Sniff', async ({ page }) => {
+  await enterAndStart(page, 7);
+  expect((await s4(page)).pointMarkVisible).toBe(true);     // wave 1
+  for (const w of [2, 3]) {
+    const st = await playToWaveTelegraph(page, w);
+    expect(st, `should reach wave ${w} telegraph`).not.toBeNull();
+    expect(st.wave).toBe(w);
+    expect(st.pointMarkVisible).toBe(true);
+    await expect(page.locator('.s4-point-mark')).toBeVisible();
+  }
+});
+
+test('the point marker is hidden once the target spawns', async ({ page }) => {
+  await enterAndStart(page, 5);
+  expect((await s4(page)).pointMarkVisible).toBe(true);
+  await page.evaluate(() => window.__merlinGame.debug.stage4SpawnNextTarget());
+  const st = await s4(page);
+  expect(st.pointMarkVisible).toBe(false);
+  await expect(page.locator('.s4-point-mark')).toBeHidden();
+  expect(st.spawnAt).not.toBeNull();                        // target still spawned where he pointed
+});
+
+test('Big Sniff keeps the point marker visible (and the field stronger)', async ({ page }) => {
+  await enterAndStart(page, 5);
+  await page.evaluate(() => window.__merlinGame.debug.stage4SpawnNextTarget());
+  await page.evaluate(() => window.__merlinGame.debug.stage4TriggerBigSniff());
+  await page.evaluate(() => window.__merlinGame.debug.stage4TapTarget());      // → next round telegraph, Big Sniff active
+  const st = await s4(page);
+  expect(st.telegraphing).toBe(true);
+  expect(st.bigSniffActive).toBe(true);
+  expect(st.pointMarkVisible).toBe(true);
+  await expect(page.locator('#s4-field.bigsniff .s4-point-mark')).toBeVisible();
+});
+
+test('Big Sniff still slows the chase', async ({ page }) => {
+  await enterAndStart(page, 5);
+  await page.evaluate(() => window.__merlinGame.debug.stage4SpawnNextTarget());
+  const st = await s4(page);
+  const vx = Math.abs(st.targetVx), x0 = st.target.x;
+  await page.evaluate(() => window.__merlinGame.debug.stage4TriggerBigSniff());   // Big Sniff active
+  await page.evaluate(() => window.__merlinGame.debug.stage4AdvanceMotion(200));
+  const moved = Math.abs((await s4(page)).target.x - x0);
+  expect(moved).toBeGreaterThan(0);
+  expect(moved).toBeLessThan(vx * 1.15 * 0.2);              // slowed below the un-slowed +15% distance
 });

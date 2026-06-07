@@ -1012,6 +1012,7 @@ const STAGE4_TEXT = {
 const S4_TARGET = { duck: '🦆', clay: '🥏' };
 const S4_DECOY = { butterfly: '🦋', hat: '🎩', hades: '😼' };
 const S4_WAVE_ROUNDS = [3, 4, 4];
+const S4_SPEED_MULT = 1.15;   // gentle +15% chase speed (playtest tuning)
 
 // Bright sky-and-field gallery backdrop.
 function drawSkyField(ctx) {
@@ -1070,6 +1071,7 @@ class Stage4Scene extends Scene {
     this.maxCombo = 0;
     this.targetTimedOut = 0;
     this.pending = null;
+    this.pointMark = null;
     this.canvas = document.getElementById('game-canvas');
     this.ctx = this.canvas.getContext('2d');
     this.layer = document.getElementById('stage4-layer');
@@ -1105,6 +1107,25 @@ class Stage4Scene extends Scene {
     this.bind.timeout(() => { this.banner.style.display = 'none'; }, ms || 1000);
   }
 
+  // The DOM point marker — a bold ring on the field showing where the find will appear.
+  // Visible on EVERY round during the telegraph (not just Big Sniff); Big Sniff makes it stronger.
+  _showPointMark() {
+    if (!this.field || !this.pointAt) return;
+    let m = this.pointMark;
+    if (!m) {
+      m = document.createElement('div');
+      m.className = 's4-point-mark';
+      this.pointMark = m;
+      this.field.appendChild(m);
+    }
+    m.style.left = this.pointAt.x + '%';
+    m.style.top = this.pointAt.y + '%';
+    m.style.display = 'block';
+  }
+  _hidePointMark() {
+    if (this.pointMark) { this.pointMark.style.display = 'none'; }
+  }
+
   _beginRound() {
     this.telegraphing = true;
     this.target = null;
@@ -1116,6 +1137,7 @@ class Stage4Scene extends Scene {
     this.pending = { kind, x, y };
     this.pointAt = { x, y };
     this.telegraphEl.style.display = 'block';
+    this._showPointMark();
     if (this.field) this.field.classList.toggle('bigsniff', this.bigSniffActive);
     SFX.sniff();
     // Big Sniff gives a longer, clearer point (feels rewarding).
@@ -1127,6 +1149,7 @@ class Stage4Scene extends Scene {
     if (this.target) return;                         // already spawned (e.g. forced by a test hook)
     this.telegraphing = false;
     this.telegraphEl.style.display = 'none';
+    this._hidePointMark();
     const r = this.rng;
     const p = this.pending || { kind: r() < 0.5 ? 'duck' : 'clay', x: Math.round(12 + r() * 64), y: Math.round(16 + r() * 30) };
     const tdir = r() < 0.5 ? 1 : -1;
@@ -1169,7 +1192,7 @@ class Stage4Scene extends Scene {
   // Deterministic motion: move active target/decoy, bounce inside the sky field.
   _moveTargets(dt) {
     if (dt <= 0) return;
-    const step = dt / 1000 * (this.bigSniffActive ? 0.55 : 1);   // Big Sniff slows the chase
+    const step = dt / 1000 * S4_SPEED_MULT * (this.bigSniffActive ? 0.55 : 1);   // +15% base; Big Sniff still slows the chase
     [this.target, this.decoy].forEach(o => {
       if (!o) return;
       o.x += (o.vx || 0) * step;
@@ -1310,6 +1333,7 @@ class Stage4Scene extends Scene {
       bigSniffActive: this.bigSniffActive,
       telegraphing: this.telegraphing,
       pointAt: this.pointAt ? { x: this.pointAt.x, y: this.pointAt.y } : null,
+      pointMarkVisible: !!(this.pointMark && this.pointMark.style.display !== 'none'),
       target: this.target ? { kind: this.target.kind, x: this.target.x, y: this.target.y } : null,
       spawnAt: this.target ? { x: this.target.spawnX, y: this.target.spawnY } : null,
       targetVx: this.target ? this.target.vx : null,
@@ -1343,6 +1367,7 @@ class Stage4Scene extends Scene {
     this.layer.style.display = 'none';
     this.telegraphEl.style.display = 'none';
     this.banner.style.display = 'none';
+    this.pointMark = null;
     if (this.field) this.field.innerHTML = '';
     if (this.ctx) this.ctx.clearRect(0, 0, GW, GH);
     this.game.dialogue.hide();

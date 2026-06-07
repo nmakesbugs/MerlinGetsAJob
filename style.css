@@ -50,13 +50,6 @@ body[data-accent="hades"]   { --accent: #8a5fc0; --accent-deep: #4a2f80; }
   font-weight: 800; color: var(--accent-deep);
 }
 #hud-stage { font-size: 13px; letter-spacing: .03em; opacity: .85; }
-#assist-toggle {
-  font-family: inherit; font-weight: 800; font-size: 12px;
-  color: #fff; background: var(--accent); border: none;
-  padding: 7px 12px; border-radius: 999px; cursor: pointer;
-  box-shadow: 0 2px 0 var(--accent-deep);
-}
-#assist-toggle[aria-pressed="false"] { background: #7a8aa0; box-shadow: 0 2px 0 #4a5566; }
 
 /* Shared result toast (end-of-stage stars + Merlin Medals) */
 #result-toast {
@@ -392,7 +385,6 @@ body[data-accent="hades"]   { --accent: #8a5fc0; --accent-deep: #4a2f80; }
   50%     { box-shadow: 0 0 20px 8px rgba(196,98,45,.7); }
 }
 .s4-target.decoy { background: rgba(255,255,255,.35); }
-.s4-target.small { width: 46px; height: 46px; font-size: 28px; line-height: 42px; }  /* Challenge: smaller targets */
 /* Lightweight per-kind variety (glow-speed only — keeps the hit area stable) */
 .s4-target.s4-kind-clay.primary { animation-duration: .7s; }     /* clay pops faster */
 .s4-target.s4-kind-duck.primary { animation-duration: 1.3s; }    /* duck drifts in lazily */
@@ -407,6 +399,24 @@ body[data-accent="hades"]   { --accent: #8a5fc0; --accent-deep: #4a2f80; }
 .s4-target.flyoff { transition: transform .35s ease, opacity .35s ease; transform: translate(-50%, -180%) rotate(12deg); opacity: 0; }
 .s4-target.puff { transition: transform .3s ease, opacity .3s ease; transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
 .s4-target.gone { transition: opacity .25s ease; opacity: 0; }
+/* DOM point marker — bold ring showing where the find will appear, on EVERY round.
+   Static transform only (centering); no infinite scale animation, so the box stays stable. */
+.s4-point-mark {
+  position: absolute; width: 54px; height: 54px;
+  transform: translate(-50%, -50%);
+  border: 4px solid var(--accent-deep); border-radius: 50%;
+  box-shadow: 0 0 18px 7px rgba(196,98,45,.65);
+  background: rgba(255,246,230,.22);
+  pointer-events: none; z-index: 2;
+}
+.s4-point-mark::after {
+  content: '👃'; position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%); font-size: 18px;
+}
+#s4-field.bigsniff .s4-point-mark {
+  width: 66px; height: 66px;
+  box-shadow: 0 0 28px 12px rgba(255,196,90,.85);
+}
 
 /* ================================================================
    STAGE 5 — Merlin Goes Bird Dog (patient fieldwork)
@@ -509,11 +519,8 @@ body[data-accent="hades"]   { --accent: #8a5fc0; --accent-deep: #4a2f80; }
 .s6-event.pri-med { border-color: #c79b53; }
 .s6-event.pri-low { opacity: .55; border-style: dashed; }     /* junk reads as dim/subtle */
 .s6-event.pri-rest { border-color: #e6b450; background: #fff6da; box-shadow: 0 0 14px 4px rgba(255,210,90,.6); }
-/* Challenge: high-priority no longer glows (subtler cue); junk looks more tempting */
-.s6-event.pri-high.challenge { animation: none; }
-.s6-event.pri-low.challenge { opacity: .92; border-style: solid; }
-/* "can delegate" cue — a small handshake badge (Assist only, so it stays a clear hint) */
-.s6-event.can-delegate:not(.challenge)::after {
+/* "can delegate" cue — a small handshake badge, always a clear hint */
+.s6-event.can-delegate::after {
   content: '🤝'; position: absolute; top: -8px; right: -8px; font-size: 14px;
   background: #fff; border-radius: 50%; padding: 1px 2px; box-shadow: 0 1px 3px rgba(0,0,0,.3);
 }

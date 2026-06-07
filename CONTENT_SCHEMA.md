@@ -14,7 +14,7 @@ window.__merlinGame = {
   state: {
     currentStage: 'stage1-career-crisis', // stage id, see §3
     furthestStage: 'stage1-career-crisis', // for optional localStorage resume
-    assistMode: true,        // true=Assist (default), false=Challenge
+    // NOTE: assistMode was removed in 0.82 — single warm default mode now (no difficulty flag).
     aesthetic: 'home',       // accent theme: home|ila|chinook|hades (drives palette)
     choices: {},             // recorded story choices, e.g. {firstJob:'ila'}
     stars: {},               // per-stage star rating {stageId: 0..3}

@@ -16,7 +16,21 @@ See the design docs for the full vision: [`DESIGN_BIBLE.md`](DESIGN_BIBLE.md),
 
 ## Status
 
-### 0.82 — Mechanics Simplification + Chinook Fun Patch ✅ (current)
+### 0.82.1 — Stage 4 finalization micro-patch ✅ (current)
+
+Tiny playtest-tuning patch (not a narrative pass):
+
+- **Stage 4 chase +15%:** target movement is a touch quicker (`S4_SPEED_MULT = 1.15`, applied
+  once in `_moveTargets`). Relative feel preserved — duck still lazier than clay, clay still
+  fastest/shortest-lived, Big Sniff still slows the chase.
+- **Point marker on every round:** a bold DOM ring (`.s4-point-mark`, with a 👃) now shows where
+  the find will appear during **every** telegraph, not just during Big Sniff. Big Sniff makes it
+  stronger; it's removed when the target spawns and on stage exit.
+- **Cleanup:** removed the last stale Assist/Challenge CSS (`#assist-toggle`, `.s6-event.*.challenge`)
+  and neutralized the "Assist only" comment. (Stage 3's *Boof Bark / Tail Trip / Distraction
+  Wiggle* "assists" are combat actions, not the removed difficulty mode — left intact.)
+
+### 0.82 — Mechanics Simplification + Chinook Fun Patch ✅
 
 - **Removed Assist/Challenge entirely.** There is now **one warm, easy, lightly-skillful default
   mode** — no HUD toggle, no `state.assistMode`, no difficulty menu. Stars and Merlin Medals
@@ -50,7 +64,10 @@ Focused UX/clarity polish from playtest feedback (not the narrative pass):
   time** (no crowded 6-button panel), and a clearer prompt ("fill the room with Joy"). Still
   sweet, no-fail, Joy-only-rises.
 
-### 0.8 — Gameplay & Mechanics Pass ✅
+### 0.8 — Gameplay & Mechanics Pass ✅ (historical — Assist/Challenge later removed in 0.82)
+
+> Prior history. The Assist/Challenge split described below was **removed in 0.82**; the game now
+> has a single warm default mode. Kept here only as a record of the 0.8 milestone.
 
 Made the game feel like a real game without losing the warmth. **Assist Mode stays easy and
 guaranteed-finishable**; **Challenge Mode** is now meaningfully more thoughtful.
