@@ -433,8 +433,57 @@ body[data-accent="hades"]   { --accent: #8a5fc0; --accent-deep: #4a2f80; }
   50%     { box-shadow: 0 4px 0 var(--accent-deep), 0 0 20px 8px rgba(196,98,45,.7); }
 }
 
+/* ================================================================
+   STAGE 6 — Hades Teaches Management (Throne of Composure)
+   ================================================================ */
+#stage6-layer { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+#stage6-layer > * { pointer-events: auto; }
+#s6-events { position: absolute; inset: 0; pointer-events: none; }
+#s6-events > * { pointer-events: auto; }
+
+#s6-meters { position: absolute; top: 44px; left: 12px; right: 12px; display: flex; flex-direction: column; gap: 5px; }
+.s6-meter { display: flex; align-items: center; gap: 8px; }
+.s6-meter-label { font-weight: 800; font-size: 12px; color: var(--accent-deep); width: 76px; }
+.s6-bar { flex: 1; height: 11px; background: rgba(74,47,128,.18); border-radius: 999px; overflow: hidden; }
+.s6-bar > div { height: 100%; width: 0%; border-radius: 999px; transition: width .2s ease; }
+#s6-comp-fill { background: var(--accent-deep); }
+#s6-happy-fill { background: #d39a3a; }
+#s6-round { position: absolute; top: 84px; left: 0; right: 0; text-align: center; font-weight: 800; font-size: 13px; color: var(--accent-deep); }
+
+#s6-banner {
+  position: absolute; top: 44%; left: 50%; transform: translate(-50%, -50%);
+  font-family: 'Fredoka One','Nunito',cursive; font-size: 20px; color: var(--accent-deep);
+  background: var(--paper); border: 3px solid var(--accent-deep); border-radius: 16px;
+  padding: 12px 18px; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,.3); max-width: 320px;
+}
+
+/* Event cards */
+.s6-event {
+  position: absolute; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  min-width: 86px; padding: 8px 8px 6px; border-radius: 14px; cursor: pointer;
+  background: var(--paper); border: 2px solid var(--accent);
+}
+.s6-ev-icon { font-size: 30px; line-height: 1; }
+.s6-ev-label { font-size: 10px; font-weight: 800; color: var(--ink); white-space: nowrap; }
+/* box-shadow-only glow keeps cards clickable in tests */
+.s6-event.pri-high { border-color: var(--accent-deep); animation: s6high 1s ease-in-out infinite; }
+@keyframes s6high { 0%,100% { box-shadow: 0 0 5px 1px rgba(138,95,192,.4); } 50% { box-shadow: 0 0 20px 8px rgba(138,95,192,.75); } }
+.s6-event.pri-med { border-color: #c79b53; }
+.s6-event.pri-low { opacity: .55; border-style: dashed; }     /* junk reads as dim/subtle */
+.s6-event.pri-rest { border-color: #e6b450; background: #fff6da; box-shadow: 0 0 14px 4px rgba(255,210,90,.6); }
+
+#s6-controls { position: absolute; left: 16px; right: 16px; bottom: 20px; display: flex; justify-content: center; }
+.s6-btn {
+  font-family: 'Nunito',sans-serif; font-weight: 800; font-size: 16px; color: #fff;
+  background: var(--accent-deep); border: none; padding: 14px 28px; border-radius: 14px;
+  cursor: pointer; box-shadow: 0 4px 0 #2f1d57;
+}
+.s6-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #2f1d57; }
+.s6-btn:disabled { opacity: .45; box-shadow: 0 2px 0 #2f1d57; cursor: default; }
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .big-btn, .mentor-card { transition: none; }
-  #glow-bowl, #stage1-hint, .s2-dot.next, .s3-finisher.ready, .s4-target.primary, .s5-btn.flush.ready { animation: none; }
+  #glow-bowl, #stage1-hint, .s2-dot.next, .s3-finisher.ready, .s4-target.primary, .s5-btn.flush.ready, .s6-event.pri-high { animation: none; }
 }

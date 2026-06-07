@@ -16,7 +16,24 @@ See the design docs for the full vision: [`DESIGN_BIBLE.md`](DESIGN_BIBLE.md),
 
 ## Status
 
-### Milestone 5 — Stage 5: "Merlin Goes Bird Dog" ✅ (current)
+### Milestone 6 — Stage 6: "Hades Teaches Management" ✅ (current)
+
+The original **"Throne of Composure"** — a reverse-whack-a-mole where the winning skill is
+**restraint**. Hades (a large, athletic, imperious, code-drawn spotted cat) teaches that being
+in charge means doing *less*, deliberately.
+
+- Tap what matters (**the boys**, the empty bowl, a gentle squabble) to raise **Household
+  Happiness**; **ignore the junk** (doorbell, leaf, noise) — tapping it **drains Composure**.
+- **Claim the sunbeam** for strategic rest (restores Composure) and **Delegate** tedious tasks
+  to a helper (limited uses) — a leader empowers others.
+- **Composure** zero = Merlin spirals into adorable chaos, Hades sighs, the room resets — a
+  comedy reset, **never a game-over**. Hades demonstrates first.
+- Hades's dry verdict **names Merlin's real gift** ("your management style is simply… being
+  loved"), seeding the finale. Flags `stage6DemoComplete`, `stage6Round{1,2,3}Complete`,
+  `stage6Complete` (+ `stage6DelegatedTask`, `stage6ComposureResetSeen`); hands off to
+  `stage7-realjob`.
+
+### Milestone 5 — Stage 5: "Merlin Goes Bird Dog" ✅
 
 The "anti-Duck-Hunt" — the slow, patient reality behind the gallery. Merlin tries the real
 bird-dog job himself and learns it's hard, careful work.
@@ -161,6 +178,11 @@ The test config (`tests/playwright.config.js`) auto-starts a static server on po
   strength → point phase, point-completes-via-hold, **flush locked until the cue**, gentle
   flush → **bird fly-free**, rising fatigue across finds, full Assist auto-play → Stage 6, and
   a family-safe guardrail (no shooting/catching; birds fly free).
+- `tests/stage6.spec.js` — Stage 6 real content, direct entry, Hades identified + a canvas
+  sanity check, demo flag, high-priority handling raising happiness, **junk draining Composure**,
+  **sunbeam restoring it**, delegate consuming a use, **Composure-zero comedic reset (no
+  game-over)**, full Assist auto-play → Stage 7, and a verdict/tone guardrail (names "being
+  loved"; no cruelty).
 
 > Note: clickable elements use `box-shadow`-only glow pulses (never animated `transform`), and
 > tests advance via debug hooks (`drainDialogue`, `stage2AutoPlayDrill`) rather than

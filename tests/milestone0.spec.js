@@ -45,10 +45,10 @@ test('start button enters stage 1', async ({ page }) => {
 test('walks every placeholder stage in order and reaches the ending', async ({ page }) => {
   await page.goto('/');
 
-  // Stages 1–5 are full scenes (see stage1–5 specs); jump to the placeholder chain (stages 6–7).
-  await page.evaluate(() => window.__merlinGame.goToStage('stage6-hades'));
+  // Stages 1–6 are full scenes (see stage1–6 specs); only Stage 7 remains a placeholder.
+  await page.evaluate(() => window.__merlinGame.goToStage('stage7-realjob'));
 
-  for (let i = 5; i < STAGE_IDS.length; i++) {
+  for (let i = 6; i < STAGE_IDS.length; i++) {
     await waitForStage(page, STAGE_IDS[i]);
     await expect(page.locator('#sv-badge')).toContainText('Stage ' + (i + 1));
     if (i < STAGE_IDS.length - 1) await page.locator('#stage-continue').click();
@@ -125,21 +125,22 @@ test('seeded RNG is deterministic', async ({ page }) => {
 // ═══════════════════════════════════════════════════════════
 test('scene teardown runs and listeners do not accumulate', async ({ page }) => {
   await page.goto('/');
-  // Drive the identical placeholder scenes (stages 6–7) to measure listener stability.
-  await page.evaluate(() => window.__merlinGame.goToStage('stage6-hades'));
-  await waitForStage(page, 'stage6-hades');
-
-  const exitsBefore = await page.evaluate(() => window.__merlinGame.debug.exitCount);
-  await page.locator('#stage-continue').click();
+  // Re-enter the same placeholder scene (Stage 7) twice; a clean exit() means the live
+  // listener count returns to the identical baseline (no accumulation).
+  await page.evaluate(() => window.__merlinGame.goToStage('stage7-realjob'));
   await waitForStage(page, 'stage7-realjob');
-  const atStage7 = await page.evaluate(() => window.__merlinGame.debug.activeListenerCount());
-  await page.evaluate(() => window.__merlinGame.goToStage('stage6-hades'));
-  await waitForStage(page, 'stage6-hades');
-  const atStage6 = await page.evaluate(() => window.__merlinGame.debug.activeListenerCount());
+  const firstCount = await page.evaluate(() => window.__merlinGame.debug.activeListenerCount());
+  const exitsBefore = await page.evaluate(() => window.__merlinGame.debug.exitCount);
+
+  await page.evaluate(() => window.__merlinGame.goToStage('title'));
+  await waitForStage(page, 'title');
+  await page.evaluate(() => window.__merlinGame.goToStage('stage7-realjob'));
+  await waitForStage(page, 'stage7-realjob');
+  const secondCount = await page.evaluate(() => window.__merlinGame.debug.activeListenerCount());
   const exitsAfter = await page.evaluate(() => window.__merlinGame.debug.exitCount);
 
-  // Placeholder scenes are structurally identical → identical live-listener count.
-  expect(atStage7).toBe(atStage6);
+  // Same scene re-entered → identical live-listener count (no leak).
+  expect(secondCount).toBe(firstCount);
   // exit() fired for each transition.
   expect(exitsAfter).toBeGreaterThan(exitsBefore);
 });

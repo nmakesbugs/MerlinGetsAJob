@@ -1465,6 +1465,335 @@ class Stage5Scene extends Scene {
   }
 }
 
+/* ================================================================
+   STAGE 6 — Hades Teaches Management ("The Throne of Composure").
+   A reverse-whack-a-mole: the winning skill is RESTRAINT. Tap the events
+   that matter (the boys, the bowl), IGNORE the junk (doorbell, leaf),
+   claim the sunbeam to rest, and delegate the tedious. Tapping junk drains
+   Composure; zero Composure is a comedy spiral + reset, never a game-over.
+   Deterministic scripted event sequences. Hades is imperious, never cruel.
+   ================================================================ */
+const STAGE6_EVENTS = {
+  'boys-need': { pri: 'high', icon: '🧒', label: 'The boys need you' },
+  'empty-bowl': { pri: 'high', icon: '🥣', label: 'Empty bowl' },
+  'squabble': { pri: 'high', icon: '🙃', label: 'Gentle squabble' },
+  'toy-fetch': { pri: 'med', icon: '🧸', label: 'Toy to fetch' },
+  'doorbell': { pri: 'low', icon: '🔔', label: 'Doorbell' },
+  'leaf': { pri: 'low', icon: '🍃', label: 'A leaf' },
+  'noise': { pri: 'low', icon: '📦', label: 'A noise' },
+  'sunbeam': { pri: 'rest', icon: '☀️', label: 'Sunbeam' },
+};
+const STAGE6_ROUNDS = [
+  ['boys-need', 'leaf', 'empty-bowl', 'sunbeam', 'squabble'],
+  ['doorbell', 'boys-need', 'leaf', 'toy-fetch', 'sunbeam', 'squabble'],
+  ['leaf', 'boys-need', 'doorbell', 'empty-bowl', 'sunbeam', 'toy-fetch', 'squabble'],
+];
+const STAGE6_TEXT = {
+  intro: [
+    { speaker: 'Hades', text: 'You believe being in charge means doing everything.' },
+    { speaker: 'Hades', text: 'It means doing almost nothing — perfectly, and at exactly the right moment.' },
+    { speaker: 'Merlin', text: 'Doing nothing sounds like resting.' },
+    { speaker: 'Hades', text: 'You are beginning to understand. Slowly.' },
+  ],
+  demo: [
+    { speaker: 'Hades', text: 'Watch. The boys need something — I attend to it at once.' },
+    { speaker: 'Hades', text: 'A leaf drifts past the window. I do not move.' },
+    { speaker: 'Hades', text: 'A sunbeam arrives. I claim it. This is strategy, not laziness.' },
+    { speaker: 'Hades', text: 'The tedious tasks, I delegate. Now — your turn.' },
+  ],
+  verdict: [
+    { speaker: 'Hades', text: 'You are loud, undisciplined, and you tracked mud onto my domain.' },
+    { speaker: 'Hades', text: 'And yet the boys are happy when you are near.' },
+    { speaker: 'Hades', text: 'Perhaps your management style is simply… being loved.' },
+    { speaker: 'Merlin', text: 'Is that a job?' },
+    { speaker: 'Hades', text: 'For you? Apparently.' },
+  ],
+  spiral: 'Merlin spirals into chaos! Hades sighs and resets the room.',
+  ignored: 'Ignored — wisely.',
+};
+const S6_SLOTS = [[24, 36], [62, 30], [42, 52], [76, 50], [28, 60], [60, 62]];
+
+// Hades — a large, athletic, imperious spotted cat on a royal cushion.
+function drawHades(ctx) {
+  const g = pen(ctx);
+  const COAT = '#bca77f', SPOT = '#5d4a30', CREAM = '#e7d8b8';
+  g.fill('#5b3a8c', 1); g.ellipse(60, 140, 122, 30); g.fill('#7a52ad', 1); g.ellipse(60, 135, 108, 22);  // cushion
+  g.fill(COAT, 1); g.ellipse(20, 128, 62, 18);                               // curled tail (front)
+  g.fill(SPOT, 1);[14, 28, 42].forEach(x => g.circle(x, 127, 3));
+  g.fill(COAT, 1); g.ellipse(62, 96, 70, 92);                                // tall sitting body
+  g.fill(CREAM, 1); g.ellipse(64, 110, 40, 62);                              // chest
+  g.fill(COAT, 1); g.rrect(48, 120, 14, 30, 6); g.rrect(70, 120, 14, 30, 6); // front legs
+  g.fill(CREAM, 1); g.ellipse(55, 150, 16, 8); g.ellipse(77, 150, 16, 8);    // paws
+  g.fill(SPOT, 1);[[44, 80], [80, 82], [40, 104], [86, 108], [50, 62], [78, 64]].forEach(([x, y]) => g.ellipse(x, y, 8, 6));
+  g.fill(COAT, 1); g.ellipse(62, 46, 52, 46);                                // head
+  g.fill(COAT, 1); g.tri(40, 6, 30, 44, 58, 40); g.tri(84, 6, 70, 40, 98, 44); // big ears
+  g.fill('#caa6d6', 1); g.tri(42, 16, 36, 40, 53, 38); g.tri(82, 16, 75, 38, 92, 40); // inner ear
+  g.fill(CREAM, 1); g.ellipse(62, 58, 34, 22);                               // muzzle
+  g.fill('#3a2a30', 1); g.tri(58, 56, 66, 56, 62, 62);                       // nose
+  g.fill('#c9b24a', 1); g.ellipse(50, 46, 12, 7); g.ellipse(74, 46, 12, 7);  // amber eyes
+  g.fill('#2a3a20', 1); g.rrect(45, 41, 10, 4, 2); g.rrect(69, 41, 10, 4, 2); // heavy regal lids
+  g.fill('#15150e', 1); g.ellipse(50, 47, 3, 5); g.ellipse(74, 47, 3, 5);    // slit pupils
+  g.fill(SPOT, 1);[56, 62, 68].forEach((x, i) => g.rect(x, 16 + (i === 1 ? -2 : 0), 3, 11));  // forehead ticking
+  g.fill('#ffffff', 0.7); g.rect(30, 58, 18, 1); g.rect(76, 58, 18, 1);      // whiskers
+  ctx.globalAlpha = 1;
+}
+
+// Cozy living room: warm wall, wood floor, sunny window, the boys' photo, a rug.
+function drawLivingRoom(ctx) {
+  const g = pen(ctx);
+  g.fill('#fbe6cf', 1); g.rect(0, 0, GW, 440);
+  g.fill('#d9a564', 1); g.rect(0, 440, GW, GH - 440);
+  g.fill('#c98f4e', 1); g.rect(0, 440, GW, 5);
+  g.fill('#9fd3e8', 1); g.rrect(30, 60, 120, 120, 8);
+  g.fill('#fff1a8', 1); g.circle(120, 95, 18);
+  g.fill('#a9744a', 1); g.rect(26, 54, 128, 8); g.rect(26, 176, 128, 8); g.rect(86, 60, 7, 120);
+  g.fill('#ffe9a8', 0.45); g.tri(58, 182, 150, 182, 120, 440);               // sunbeam on floor
+  g.fill('#7a4a22', 1); g.rrect(250, 80, 96, 74, 8); g.fill('#fdf6e8', 1); g.rrect(257, 87, 82, 60, 4);
+  g.fill('#9fd0e8', 1); g.rrect(261, 91, 74, 52, 3);
+  g.fill('#f3c9a0', 1); g.circle(280, 118, 10); g.circle(305, 116, 11); g.circle(326, 120, 9);  // the boys
+  g.fill('#7a52ad', 1); g.ellipse(150, 560, 300, 120); g.fill('#9b73c8', 1); g.ellipse(150, 560, 230, 86);
+  ctx.globalAlpha = 1;
+}
+
+class Stage6Scene extends Scene {
+  enter() {
+    this.game.setAccent('hades');
+    this.game.setHud('Stage 6');
+    this.game.state.flags.stage6Started = true;
+    this.t = 0;
+    this.phase = 'intro';            // intro|demo|round|verdict
+    this.round = 0;
+    this.queue = [];
+    this.active = [];
+    this._eid = 0;
+    this._slot = 0;
+    this.spawnTimer = 0;
+    this.composure = 100;
+    this.happiness = 0;
+    this.happinessGoal = 120;
+    this.delegatesLeft = this._assist() ? 3 : 2;
+    this.canvas = document.getElementById('game-canvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.layer = document.getElementById('stage6-layer');
+    this.eventsEl = document.getElementById('s6-events');
+    this.banner = document.getElementById('s6-banner');
+    this.delegateBtn = document.getElementById('s6-delegate');
+    this.layer.style.display = 'block';
+    this.bind.on(this.delegateBtn, 'click', () => this._delegate());
+    SFX.motif('hades');
+    this._updateHud();
+    this.game.dialogue.show(STAGE6_TEXT.intro, () => this._demo());
+  }
+
+  _assist() { return this.game.state.assistMode; }
+  _spawnInterval() { return [1700, 1400, 1100][Math.max(0, this.round - 1)] || 1500; }
+  _junkLife() { return this._assist() ? 2800 : 2000; }
+
+  _updateHud() {
+    document.getElementById('s6-comp-fill').style.width = Math.max(0, Math.min(100, this.composure)) + '%';
+    document.getElementById('s6-happy-fill').style.width = Math.min(100, Math.round(this.happiness / this.happinessGoal * 100)) + '%';
+    document.getElementById('s6-round').textContent = this.phase === 'round' ? ('Round ' + this.round) : 'Hades’ Domain';
+    this.delegateBtn.textContent = '🤝 Delegate (' + this.delegatesLeft + ')';
+    this.delegateBtn.disabled = this.delegatesLeft <= 0 || this.phase !== 'round';
+  }
+  _banner(text, ms) { this.banner.textContent = text; this.banner.style.display = 'block'; this.bind.timeout(() => { this.banner.style.display = 'none'; }, ms || 1100); }
+
+  _demo() {
+    this.phase = 'demo';
+    this._updateHud();
+    this.game.dialogue.show(STAGE6_TEXT.demo, () => {
+      this.game.state.flags.stage6DemoComplete = true;
+      this._startRound(1);
+    });
+  }
+
+  _startRound(r) {
+    this.phase = 'round';
+    this.round = r;
+    this.queue = STAGE6_ROUNDS[r - 1].slice();
+    this._clearActive();
+    this.spawnTimer = 0;
+    this._updateHud();
+  }
+
+  _clearActive() { this.active.forEach(e => { if (e.el && e.el.parentNode) e.el.parentNode.removeChild(e.el); }); this.active = []; }
+  _findActive(type) { return this.active.find(e => e.type === type) || null; }
+
+  _spawnType(type) {
+    const def = STAGE6_EVENTS[type];
+    const ev = { id: ++this._eid, type, pri: def.pri, life: (def.pri === 'low' ? this._junkLife() : def.pri === 'rest' ? 3400 : null), slot: this._slot++ % S6_SLOTS.length };
+    this.active.push(ev);
+    this._addEl(ev);
+    return ev;
+  }
+  _spawnNext() { if (!this.queue.length) return null; return this._spawnType(this.queue.shift()); }
+
+  _addEl(ev) {
+    const def = STAGE6_EVENTS[ev.type];
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 's6-event pri-' + ev.pri;
+    b.setAttribute('data-type', ev.type);
+    b.setAttribute('data-pri', ev.pri);
+    b.style.left = S6_SLOTS[ev.slot][0] + '%';
+    b.style.top = S6_SLOTS[ev.slot][1] + '%';
+    b.innerHTML = '<span class="s6-ev-icon">' + def.icon + '</span><span class="s6-ev-label">' + def.label + '</span>';
+    ev.el = b;
+    this.bind.on(b, 'click', () => this._handleEvent(ev));
+    this.eventsEl.appendChild(b);
+  }
+  _removeEl(ev) { if (ev.el && ev.el.parentNode) ev.el.parentNode.removeChild(ev.el); const i = this.active.indexOf(ev); if (i >= 0) this.active.splice(i, 1); }
+
+  _handleEvent(ev) {
+    if (this.active.indexOf(ev) < 0) return false;
+    if (ev.pri === 'high') { this.happiness += 20; SFX.cheer(); }
+    else if (ev.pri === 'med') { this.happiness += 10; SFX.tap(); }
+    else if (ev.pri === 'low') { this.composure -= 18; SFX.boof(); }     // reacted to junk — the dog mistake
+    else if (ev.pri === 'rest') { this.composure = Math.min(100, this.composure + 22); SFX.purr(); }  // strategic rest
+    this.composure = Math.max(0, Math.min(100, this.composure));
+    this._removeEl(ev);
+    this._updateHud();
+    if (this.composure <= 0) this._spiral();
+    else this._checkRound();
+    return true;
+  }
+
+  _ignoreEvent(ev) {
+    if (this.active.indexOf(ev) < 0) return false;
+    if (ev.pri === 'low') { this.composure = Math.min(100, this.composure + 6); SFX.slowBlink(); this._banner(STAGE6_TEXT.ignored, 700); }
+    this._removeEl(ev);
+    this._updateHud();
+    this._checkRound();
+    return true;
+  }
+
+  _delegate(ev) {
+    if (this.delegatesLeft <= 0 || this.phase !== 'round') return false;
+    const target = ev || this.active.find(e => e.pri === 'high' || e.pri === 'med');
+    if (!target) return false;
+    this.delegatesLeft -= 1;
+    this.game.state.flags.stage6DelegatedTask = true;
+    this.happiness += (target.pri === 'high' ? 20 : 10);
+    SFX.slowBlink();
+    this._removeEl(target);
+    this._updateHud();
+    this._checkRound();
+    return true;
+  }
+
+  _spiral() {
+    this.game.state.flags.stage6ComposureResetSeen = true;
+    SFX.boof(); SFX.sigh();
+    this._clearActive();
+    this.composure = 60;                  // partial reset — never a game-over
+    this._banner(STAGE6_TEXT.spiral, 1400);
+    this._updateHud();
+  }
+
+  _checkRound() {
+    if (this.phase !== 'round') return;
+    if (this.queue.length === 0 && this.active.length === 0) this._completeRound();
+  }
+  _completeRound() {
+    this.game.state.flags['stage6Round' + this.round + 'Complete'] = true;
+    if (this.round < STAGE6_ROUNDS.length) this._startRound(this.round + 1);
+    else this._verdict();
+  }
+
+  _verdict() {
+    this.phase = 'verdict';
+    this.game.state.flags.stage6Complete = true;
+    this.game.state.stars['stage6-hades'] = 3;
+    this._updateHud();
+    SFX.slowBlink();
+    this.game.dialogue.show(STAGE6_TEXT.verdict, () => this.game.goToStage('stage7-realjob'));
+  }
+
+  update(dt) {
+    this.t += dt;
+    if (this.phase !== 'round') return;
+    if (this.game.dialogue.box.style.display !== 'none') return;
+    // expire junk/rest (ignoring junk is rewarded)
+    for (let i = this.active.length - 1; i >= 0; i--) {
+      const ev = this.active[i];
+      if (ev.life != null) { ev.life -= dt; if (ev.life <= 0) this._ignoreEvent(ev); }
+    }
+    // scripted spawn over time (for human play)
+    if (this.queue.length && this.active.length < 3) {
+      this.spawnTimer -= dt;
+      if (this.spawnTimer <= 0) { this._spawnNext(); this.spawnTimer = this._spawnInterval(); }
+    }
+  }
+
+  render() {
+    if (!this.ctx) return;
+    const ctx = this.ctx, t = this.t;
+    drawLivingRoom(ctx);
+    ctx.save(); ctx.translate(8, 412 + Math.sin(t / 600) * 2); ctx.scale(1.15, 1.15); drawMerlin(ctx, Math.sin(t / 260) * 0.6); ctx.restore();
+    const flick = Math.sin(t / 700) * 0.04;                 // slow regal tail-flick feel
+    ctx.save(); ctx.translate(230, 300); ctx.rotate(flick); ctx.scale(1.3, 1.3); drawHades(ctx); ctx.restore();
+  }
+
+  // ── Debug/test hooks (call the real production methods) ──
+  getState() {
+    return {
+      phase: this.phase,
+      round: this.round,
+      composure: this.composure,
+      happiness: this.happiness,
+      happinessGoal: this.happinessGoal,
+      delegatesLeft: this.delegatesLeft,
+      activeTypes: this.active.map(e => e.type),
+      queueLen: this.queue.length,
+      demoComplete: !!this.game.state.flags.stage6DemoComplete,
+    };
+  }
+  spawnEvent(type) { if (!STAGE6_EVENTS[type] || this.phase !== 'round') return false; return this._spawnType(type).type; }
+  handleEvent(type) { const ev = this._findActive(type) || (this.phase === 'round' ? this._spawnType(type) : null); return ev ? this._handleEvent(ev) : false; }
+  ignoreEvent(type) { const ev = this._findActive(type); return ev ? this._ignoreEvent(ev) : false; }
+  delegateEvent(type) { const ev = this._findActive(type) || (this.phase === 'round' ? this._spawnType(type) : null); return ev ? this._delegate(ev) : false; }
+  drainComposure() { this.composure = 0; this._spiral(); return true; }
+  autoPlayRound() {
+    const r = this.round; let guard = 0;
+    while (this.round === r && this.phase === 'round' && this.game.state.currentStage === 'stage6-hades' && guard++ < 80) {
+      const hi = this.active.find(e => e.pri === 'high' || e.pri === 'med');
+      if (hi) { this._handleEvent(hi); continue; }
+      const rest = this.active.find(e => e.pri === 'rest');
+      if (rest) { this._handleEvent(rest); continue; }
+      const junk = this.active.find(e => e.pri === 'low');
+      if (junk) { this._ignoreEvent(junk); continue; }
+      if (this.queue.length) { this._spawnNext(); continue; }
+      break;
+    }
+    return this.round;
+  }
+  autoPlayStage() {
+    let guard = 0;
+    while (this.game.state.currentStage === 'stage6-hades' && guard++ < 300) {
+      if (this.game.dialogue.box.style.display !== 'none') { this.game.dialogue.advance(); continue; }
+      if (this.phase !== 'round') { break; }
+      const hi = this.active.find(e => e.pri === 'high' || e.pri === 'med');
+      if (hi) { this._handleEvent(hi); continue; }
+      const rest = this.active.find(e => e.pri === 'rest');
+      if (rest) { this._handleEvent(rest); continue; }
+      const junk = this.active.find(e => e.pri === 'low');
+      if (junk) { this._ignoreEvent(junk); continue; }
+      if (this.queue.length) { this._spawnNext(); continue; }
+      break;
+    }
+    return this.game.state.currentStage;
+  }
+
+  exit() {
+    this.layer.style.display = 'none';
+    this.banner.style.display = 'none';
+    this._clearActive();
+    if (this.ctx) this.ctx.clearRect(0, 0, GW, GH);
+    this.game.dialogue.hide();
+    super.exit();
+  }
+}
+
 /* ── Ending scene ── */
 class EndScene extends Scene {
   enter() {
@@ -1485,6 +1814,7 @@ const SCENE_OVERRIDES = {
   'stage3-fight': Stage3Scene,
   'stage4-sniff': Stage4Scene,
   'stage5-birddog': Stage5Scene,
+  'stage6-hades': Stage6Scene,
 };
 
 /* ── Tiny view helpers ── */
@@ -1623,6 +1953,23 @@ const game = {
       parts.push(STAGE5_TEXT.flushBanner, STAGE5_TEXT.steady,
         'Follow the scent', 'Hold the point', 'Flush gently',
         'scent', 'sniff', 'point', 'hold steady', 'wait', 'flush gently', 'bird flies free', 'help the human');
+      return parts.join(' \n ');
+    },
+    // Stage 6 hooks (delegate to the live scene; reuse real production methods).
+    stage6GetState() { return game.scene && game.scene.getState ? game.scene.getState() : null; },
+    stage6SpawnEvent(type) { return game.scene && game.scene.spawnEvent ? game.scene.spawnEvent(type) : false; },
+    stage6HandleEvent(type) { return game.scene && game.scene.handleEvent ? game.scene.handleEvent(type) : false; },
+    stage6IgnoreEvent(type) { return game.scene && game.scene.ignoreEvent ? game.scene.ignoreEvent(type) : false; },
+    stage6DelegateEvent(type) { return game.scene && game.scene.delegateEvent ? game.scene.delegateEvent(type) : false; },
+    stage6DrainComposure() { return game.scene && game.scene.drainComposure ? game.scene.drainComposure() : false; },
+    stage6AutoPlayRound() { return game.scene && game.scene.autoPlayRound ? game.scene.autoPlayRound() : null; },
+    stage6AutoPlayStage() { return game.scene && game.scene.autoPlayStage ? game.scene.autoPlayStage() : null; },
+    // All Stage 6 player-facing strings (for the tone/safety guardrail scan).
+    stage6AllText() {
+      const parts = [];
+      STAGE6_TEXT.intro.concat(STAGE6_TEXT.demo, STAGE6_TEXT.verdict).forEach(l => parts.push(l.text));
+      Object.keys(STAGE6_EVENTS).forEach(k => parts.push(STAGE6_EVENTS[k].label));
+      parts.push(STAGE6_TEXT.spiral, STAGE6_TEXT.ignored, 'Composure', 'Happiness', 'Delegate');
       return parts.join(' \n ');
     },
   },

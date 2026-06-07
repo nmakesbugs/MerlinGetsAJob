@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=0.5">
+<link rel="stylesheet" href="style.css?v=0.6">
 </head>
 <body data-accent="home" data-stage="title">
 
@@ -154,6 +154,18 @@
         </div>
       </div>
 
+      <!-- Stage 6 interactive layer (Hades's triage / "Throne of Composure"). -->
+      <div id="stage6-layer" style="display:none">
+        <div id="s6-meters">
+          <div class="s6-meter"><span class="s6-meter-label">Composure</span><div class="s6-bar"><div id="s6-comp-fill"></div></div></div>
+          <div class="s6-meter"><span class="s6-meter-label">Happy</span><div class="s6-bar happy"><div id="s6-happy-fill"></div></div></div>
+        </div>
+        <div id="s6-round">Hades’ Domain</div>
+        <div id="s6-events"></div>
+        <div id="s6-banner" style="display:none"></div>
+        <div id="s6-controls"><button id="s6-delegate" class="s6-btn" type="button">🤝 Delegate (3)</button></div>
+      </div>
+
       <!-- Shared dialogue box (used from Stage 1 onward). -->
       <div id="dialogue-box" style="display:none">
         <div class="dlg-speaker" id="dlg-speaker"></div>
@@ -165,6 +177,6 @@
   </div><!-- #game-frame -->
 </div><!-- #viewport -->
 
-<script src="game.js?v=0.5"></script>
+<script src="game.js?v=0.6"></script>
 </body>
 </html>
